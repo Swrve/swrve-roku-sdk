@@ -1,11 +1,12 @@
 What is Swrve
 -------------
-Swrve is a single integrated platform delivering everything you need to drive device engagement and create valuable consumer relationships on their internet enabled devices.
-This roku SDK will enable your app to use all of these features.
+Swrve is a multi-channel customer engagement platform that provides hyper-targeting and hyper-personalization in real-time to automate relevant moments of interaction that acquire, retain and monetize customers.
+
+The Swrve native Roku SDK enables your app to use all of these features.
 
 Getting started
 ---------------
-Have a look at the quick integration guide at [http://docs.swrve.com/developer-documentation/integration/roku/](http://docs.swrve.com/developer-documentation/integration/roku/)
+Have a look at the quick integration guide at [https://docs.swrve.com/developer-documentation/integration/ott/roku/](https://docs.swrve.com/developer-documentation/integration/ott/roku/)
 
 Installation
 -------------------
