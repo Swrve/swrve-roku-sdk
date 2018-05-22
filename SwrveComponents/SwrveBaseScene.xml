@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!-- This will serve as a base class for Scenes. Users should extend their own Scene from this in order to
+use Swrve features. -->
+<component name="SwrveBaseScene" extends="Scene" >
+    <interface>
+        <field id="iamVisibilityObserverForIAM" type="bool" alias="swrveIAMGroup.visible" alwaysNotify="true" onChange="OnIAMDisappearing" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveObject.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveRestClient.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveStorageManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveProduct.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveReward.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveResourceManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveCampaigns.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveEvents.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveDate.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveClient.brs" />
+        <script type="text/brightscript" >
+        <![CDATA[ 
+        
+          function init() as void
+            m.swrveIAMGroup = m.top.findNode("swrveIAMGroup")
+            m.global.observeField("swrve", "OnSwrveReady")
+            m.global.observeField("swrveShowIAM", "ShowIAM")
+          end function
+
+          function OnSwrveReady()
+
+            m.global.unobserveField("swrve")
+            SWLog("Swrve is ready, get IAM Screen ready")
+            m.swrveIAMGroup.reparent(m.swrveIAMGroup.getParent(), true)
+          End function
+
+          Function ShowIAM()
+            if m.global.swrveShowIAM
+                SWLog("Swrve has been asked to show an IAM")
+                parent = m.top
+
+                m.currentlyFocusedGroup = GetFocusedNode(parent)
+              
+                m.swrveIAMGroup.reparent(m.swrveIAMGroup.getParent(), true)
+                'Get all the iam info, configure the iam'
+                m.swrveIAMGroup.message = m.global.swrveCurrentIAM
+
+                m.swrveIAMGroup.visible = "true"
+                m.swrveIAMGroup.setFocus(true)
+
+            end if
+          End Function
+
+
+          Function GetFocusedNode(parent as Object) as Object
+            for each child in parent.getChildren(parent.getChildCount(), 0) 
+                if child.hasFocus()
+                    return child
+                end if
+                if child.isInFocusChain()
+                    return GetFocusedNode(child)
+                end if
+            end for
+            return invalid
+          End Function
+
+          Function OnIAMDisappearing() 
+            if m.currentlyFocusedGroup <> invalid and m.swrveIAMGroup.visible = false
+                m.currentlyFocusedGroup.setFocus(true)
+            end if
+          end Function
+        ]]>
+        </script>
+    <children>
+        <SwrveIAMGroup
+            id="swrveIAMGroup"
+            visible="false"
+            translation="[0, 0]" 
+            />
+    </children>
+</component>

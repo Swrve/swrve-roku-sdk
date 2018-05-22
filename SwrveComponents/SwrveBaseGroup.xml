@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!-- This will serve as a base class for groups. Users should extend their own groups from this in order to
+use Swrve features. -->
+<component name="SwrveBaseGroup" extends="Group">
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveObject.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveRestClient.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveStorageManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveProduct.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveReward.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveEvents.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveDate.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveResourceManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveCampaigns.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveClient.brs" />
+</component>
