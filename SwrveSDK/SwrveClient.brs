@@ -74,7 +74,7 @@ function Swrve(config as Object, port as Object) as Object
         setCustomCallback: setCustomCallback
         setNewResourcesCallback: setNewResourcesCallback
         setNewResourcesDiffCallback: setNewResourcesDiffCallback
-
+        setCustomMessageRender: setCustomMessageRender
         SwrveClickEvent: SwrveClickEvent
         SwrveImpressionEvent: SwrveImpressionEvent
         SwrveReturnedMessageEvent: SwrveReturnedMessageEvent
@@ -123,6 +123,13 @@ function Swrve(config as Object, port as Object) as Object
     m.global.AddFields( {"forceFlush": false })
     m.global.observeField("forceFlush", port)
 
+     'This value will be used to notify the custom callback for rendering messages
+    m.global.AddField("messageWillRender", "assocarray", true)
+    m.global.setField("messageWillRender", {})
+
+    m.global.AddField("swrveSDKHasCustomRenderer", "boolean", true)
+    m.global.setField("swrveSDKHasCustomRenderer", false)
+
     ' True if there is no install date for this user, meaning it is the first ever session'
     firstSession = SwrveFirstEverSession()
 
@@ -170,7 +177,7 @@ function Swrve(config as Object, port as Object) as Object
     else
         SWLog("Session continued, keep the session alive")
     end if
-
+  
     return this
 end function
 
@@ -216,7 +223,7 @@ function GetSwrveClientInstance() as Object
     this.SwrveClickEvent = SwrveClickEvent
     this.SwrveImpressionEvent = SwrveImpressionEvent
     this.SwrveReturnedMessageEvent = SwrveReturnedMessageEvent
-
+    this.setCustomMessageRender = setCustomMessageRender
     return this
 End function
 
@@ -314,6 +321,14 @@ End Function
 Function setNewResourcesCallback(callbackName as String)
     m.global = getGlobalAA().global
     m.global.observeField("swrveResourcesAndCampaigns", callbackName)
+End Function
+
+Function setCustomMessageRender(callbackName as String)
+    m.global = getGlobalAA().global
+    m.global.observeField("messageWillRender", callbackName)
+    swrve = GetSwrveClientInstance()
+    m.global.swrveSDKHasCustomRenderer = true
+    SynchroniseSwrveInstance(swrve)
 End Function
 
 Function setNewResourcesDiffCallback(callbackName as String)

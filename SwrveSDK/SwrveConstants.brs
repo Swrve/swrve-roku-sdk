@@ -2,7 +2,7 @@
 function SwrveConstants() as Object
     userID = SwrveGetStringFromPersistence("userID", "")
     return {
-        SWRVE_SDK_VERSION: "Roku 1.0"
+        SWRVE_SDK_VERSION: "Roku 1.1"
 
         SWRVE_INSTALL_DATE_KEY: userID + "install_date"
         SWRVE_QA_DEVICE_ID_KEY: userID + "device_id"

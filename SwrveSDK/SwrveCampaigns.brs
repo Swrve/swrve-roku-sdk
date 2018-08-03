@@ -130,7 +130,14 @@ Function processShowIAM(swrveClient as Object, campaign as Object)
     swrveClient.SwrveReturnedMessageEvent(swrveClient, messageToShow)
 
 	swrveClient.SwrveForceFlush()
-	RenderIAM(messageToShow)
+
+	m.global = getGlobalAA().global
+
+	if m.global.swrveSDKHasCustomRenderer = true
+		m.global.messageWillRender = messageToShow
+	else
+		RenderIAM(messageToShow)
+	end if
 End Function
 
 Function RenderIAM(message as Object)
