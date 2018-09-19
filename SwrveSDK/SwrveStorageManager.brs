@@ -15,7 +15,7 @@ Function SwrveStorageManager() as Object
 	this.SwrveSaveStringToPersistence = SwrveSaveStringToPersistence
 	this.SwrveGetObjectFromPersistence = SwrveGetObjectFromPersistence
 	this.SwrveSaveObjectToPersistence = SwrveSaveObjectToPersistence
-
+	this.SwrveClearWholePersistence = SwrveClearWholePersistence
 	return this
 End Function
 
@@ -141,4 +141,12 @@ Function SwrveIsResourceFileValid() as Boolean
 		SWLog("Resource file has been compromised. Reloading.")
 		return false
 	end if
+End Function
+
+Function SwrveClearWholePersistence()
+	ro = CreateObject("roRegistry")
+    for each section in ro.GetSectionList()
+        ro.delete(section)
+    end for
+    ro.flush()
 End Function

@@ -5,8 +5,21 @@ function SwrveEvent(swrveClient as Object, eventName as String, payload = {} as 
    	if SwrveIsEventValid(event)
    		CheckEventForTriggers(swrveClient, event)
    		SwrveAddEventToQueue(swrveClient, event)
+   		SwrveAddEventToQueue(swrveClient, SwrveCreateWrappedEvent(event))
    	end if
    	SynchroniseSwrveInstance(swrveClient)
+end function
+
+
+'Create a device update with a dictionary of attributes'
+function SwrveDeviceUpdate(swrveClient as Object, attributes as Object) as void
+	ua = SwrveCreateDeviceUpdate(attributes)
+	if ua <> invalid
+		if ua.attributes <> invalid
+			SwrveAddEventToQueue(swrveClient, ua)
+			SwrveAddEventToQueue(swrveClient, SwrveCreateWrappedUserUpdate(ua))
+		end if
+	end if
 end function
 
 'Create a user update with a dictionary of attributes'
@@ -15,6 +28,7 @@ function SwrveUserUpdate(swrveClient as Object, attributes as Object) as void
 	if ua <> invalid
 		if ua.attributes <> invalid
 			SwrveAddEventToQueue(swrveClient, ua)
+			SwrveAddEventToQueue(swrveClient, SwrveCreateWrappedUserUpdate(ua))
 		end if
 	end if
 end function
@@ -25,6 +39,7 @@ function SwrveUserUpdateWithDate(swrveClient as Object, name as String, date as 
 	if ua <> invalid
 		if ua.attributes <> invalid
 			SwrveAddEventToQueue(swrveClient, ua)
+			SwrveAddEventToQueue(swrveClient, SwrveCreateWrappedUserUpdate(ua))
 		end if
 	end if
 end function
@@ -34,6 +49,7 @@ function SwrvePurchaseEvent(swrveClient as Object, itemQuantity as Integer, item
 	pa = SwrveCreatePurchaseEvent(StrI(itemQuantity).Trim(), itemName, Str(itemPrice).Trim(), itemCurrency)
 	if pa <> invalid
 		SwrveAddEventToQueue(swrveClient, pa)
+		SwrveAddEventToQueue(swrveClient, SwrveCreateWrappedPurchaseEvent(pa))
 	end if
 	swrveClient.SwrveForceFlush()
 end function
@@ -43,6 +59,7 @@ function SwrveCurrencyGiven(swrveClient as Object, givenCurrency as String, give
 	cg = SwrveCreateCurrencyGiven(givenCurrency, StrI(givenAmount).Trim())
 	if cg <> invalid
 		SwrveAddEventToQueue(swrveClient, cg)
+		SwrveAddEventToQueue(swrveClient, SwrveCreateWrappedCurrencyGiven(cg))
 	end if
 end function
 
@@ -51,6 +68,7 @@ function SwrveIAPWithoutReceipt(swrveClient as Object, product as Object, reward
 	pa = SwrveCreateIAPWithoutReceipt(product, rewards, currency, app_store)
 	if pa <> invalid and pa.count() > 0
 		SwrveAddEventToQueue(swrveClient, pa)
+		SwrveAddEventToQueue(swrveClient, SwrveCreateWrappedIAPWithoutReceipt(pa))
 	end if
 	swrveClient.SwrveForceFlush()
 end function
@@ -61,6 +79,7 @@ function SwrveFirstSession(swrveClient as Object) as void
 	if ua <> invalid
 		if ua.name <> invalid
 			SwrveAddEventToQueue(swrveClient, ua)
+			SwrveAddEventToQueue(swrveClient, SwrveCreateWrappedEvent(ua))
 		end if
 	end if
 end function
@@ -70,6 +89,7 @@ function SwrveSessionStart(swrveClient as Object) as void
 	ua = SwrveCreateSessionStartEvent()
 	if ua <> invalid
 		SwrveAddEventToQueue(swrveClient, ua)
+		SwrveAddEventToQueue(SwrveClient, SwrveCreateWrappedSessionStart(ua))
 	end if
 end function
 
@@ -85,6 +105,31 @@ function SwrveCreateEvent(eventName as String, payload = {} as Object) as Object
     this.time = now.toTimeToken()
     return this
 end function
+
+function SwrveCreateWrappedEvent(event as Object) as object
+	payload = {}
+	for each key in event.payload.Keys()
+		payload.AddReplace(key, event.payload[key])
+	end for
+
+	this = {}
+	this.type = "qa_log_event"
+	now = SwrveDate(CreateObject("roDateTime"))
+    this.time = now.toTimeToken()
+    this.log_type = "event"
+    this.log_source = "sdk"
+    this.log_details = {
+    	type : "event",
+    	parameters: {
+    		name: event.name,
+    		payload: payload
+    		},
+    	seqnum : SwrveGetSeqNum(),
+    	client_time: now.toTimeToken()
+    }
+    return this
+end function
+
 
 'Create a click event (IAM)'
 function SwrveClickEvent(swrveClient as object, message as Object, buttonName as String) as Object
@@ -123,6 +168,46 @@ function SwrveCreateUserUpdate(attributes as Object) as Object
     return this
 end function
 
+
+' Generic device update event'
+function SwrveCreateDeviceUpdate(attributes as Object) as Object
+	this = {}
+    this.type = SwrveConstants().SWRVE_EVENT_TYPE_DEVICE_UPDATE
+   
+    this.seqnum = SwrveGetSeqNum()
+    now = SwrveDate(CreateObject("roDateTime"))
+    this.time = now.toTimeToken()
+
+    this.attributes = attributes
+
+    return this
+end function
+
+function SwrveCreateWrappedUserUpdate(event as Object) as object
+
+	attributes = {}
+	for each key in event.attributes.Keys()
+		attributes.AddReplace(key, event.attributes[key])
+	end for
+
+	this = {}
+	this.type = "qa_log_event"
+	now = SwrveDate(CreateObject("roDateTime"))
+    this.time = now.toTimeToken()
+    this.log_type = "event"
+    this.log_source = "sdk"
+    this.log_details = { 
+    	type : "user",
+    	parameters: { 
+    		"attributes" : attributes
+    		},
+    	seqnum : SwrveGetSeqNum(),
+    	client_time: now.toTimeToken()
+    }
+
+    return this
+end function
+
 ' User update event creation'
 function SwrveCreatePurchaseEvent(quantity as String, itemName as String, cost as String, currency as String) as Object
  	this = {}
@@ -139,6 +224,28 @@ function SwrveCreatePurchaseEvent(quantity as String, itemName as String, cost a
     return this
 end function
 
+
+function SwrveCreateWrappedPurchaseEvent(event as Object) as object
+	this = {}
+	this.type = "qa_log_event"
+	now = SwrveDate(CreateObject("roDateTime"))
+    this.time = now.toTimeToken()
+    this.log_type = "event"
+    this.log_source = "sdk"
+    this.log_details = { 
+    	type : "purchase",
+    	parameters: {
+    		quantity: event.quantity,
+    		item: event.item,
+    		cost: event.cost,
+    		currency: event.currency
+    		},
+    	seqnum :SwrveGetSeqNum(),
+    	client_time: now.toTimeToken()
+    }
+    return this
+end function
+
 'Currency Given event creation'
 function SwrveCreateCurrencyGiven(givenCurrency as String, givenAmount as String)
 	this = {}
@@ -152,6 +259,28 @@ function SwrveCreateCurrencyGiven(givenCurrency as String, givenAmount as String
 
     return this
 end function
+
+
+function SwrveCreateWrappedCurrencyGiven(event as Object) as object
+	this = {}
+	this.type = "qa_log_event"
+	now = SwrveDate(CreateObject("roDateTime"))
+    this.time = now.toTimeToken()
+    this.log_type = "event"
+    this.log_source = "sdk"
+    this.log_details = { 
+    	type : "currency_given",
+    	parameters: {
+    		given_amount: event.given_amount,
+    		given_currency: event.given_currency,
+    	
+    		},
+    	seqnum : SwrveGetSeqNum(),
+    	client_time: now.toTimeToken()
+    }
+    return this
+end function
+
 
 'Create IAP without receipt'
 function SwrveCreateIAPWithoutReceipt(product as Object, rewards as Object, currency as String, app_store) as Object
@@ -177,6 +306,40 @@ function SwrveCreateIAPWithoutReceipt(product as Object, rewards as Object, curr
 
     return this
 End Function
+
+
+function SwrveCreateWrappedIAPWithoutReceipt(event as Object) as object
+
+	rewards = {}
+	for each key in event.rewards.Keys()
+		reward = {
+			type : event.rewards[key].type
+			amount: event.rewards[key].amount
+		}
+		rewards.AddReplace(key, reward)
+	end for
+
+
+	this = {}
+	this.type = "qa_log_event"
+	now = SwrveDate(CreateObject("roDateTime"))
+    this.time = now.toTimeToken()
+    this.log_type = "event"
+    this.log_source = "sdk"
+    this.log_details = { 
+    	type : "purchase",
+    	parameters: {
+    		product_id: event.product_id,
+    		app_store: event.app_store,
+    		cost: event.cost,
+    		local_currency: event.local_currency
+    		"rewards": rewards
+    		},
+    	seqnum : SwrveGetSeqNum(),
+    	client_time: now.toTimeToken()
+    }
+    return this
+end function
 
 ' Generic user update event'
 function SwrveCreateUserUpdateWithDate(name as String, date as Object) as Object
@@ -206,6 +369,23 @@ function SwrveCreateSessionStartEvent() as Object
     return this
 end function
 
+function SwrveCreateWrappedSessionStart(event as Object) as object
+	this = {}
+	this.type = "qa_log_event"
+	now = SwrveDate(CreateObject("roDateTime"))
+    this.time = now.toTimeToken()
+    this.log_type = "event"
+    this.log_source = "sdk"
+    this.log_details = { 
+    	type : "session_start",
+    	parameters: {},
+    	seqnum : SwrveGetSeqNum(),
+    	client_time: now.toTimeToken()
+    }
+    return this
+end function
+
+
 function SwrveCampaignsDownloaded(swrveClient as Object) as void
 	ids = ""
 	idx = 0
@@ -223,7 +403,7 @@ end Function
 
 ' Add event to the general event queue 
 function SwrveAddEventToQueue(swrveClient as Object, event as Object) as void
-	if swrveClient.configuration.mutedMode = false		
+	if swrveClient.configuration.stopped = false		
 		swrveClient.eventsQueue.push(event)
 		SwrveCheckQueueSize(swrveClient)
 		oldqueue = SwrveGetQueueFromStorage()
@@ -262,7 +442,7 @@ end function
 Function BuildBatchMeta(swrveClient as Object) as Object
 	jsonObject = {}
 	jsonObject.user = swrveClient.configuration.userID
-	jsonObject.device_id = swrveClient.configuration.deviceId.ToInt()
+	jsonObject.unique_device_id = swrveClient.configuration.uniqueDeviceId
 	jsonObject.app_version = swrveClient.configuration.version
 	jsonObject.session_token = swrveClient.configuration.session_token
 	return jsonObject

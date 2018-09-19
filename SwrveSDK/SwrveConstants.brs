@@ -2,11 +2,14 @@
 function SwrveConstants() as Object
     userID = SwrveGetStringFromPersistence("userID", "")
     return {
-        SWRVE_SDK_VERSION: "Roku 1.0"
+        SWRVE_SDK_VERSION: "Roku 2.0"
 
-        SWRVE_INSTALL_DATE_KEY: userID + "install_date"
-        SWRVE_QA_DEVICE_ID_KEY: userID + "device_id"
+        SWRVE_INSTALL_DATE_KEY: "install_date"
+        SWRVE_JOINED_DATE_KEY: userID + "install_date"
+
+        SWRVE_QA_UNIQUE_DEVICE_ID_KEY: "unique_device_id"
         SWRVE_USER_ID_KEY : "userID"
+        SWRVE_USER_IDS_KEY : "swrveUserIDs"
         SWRVE_LAST_SESSION_DATE_KEY: userID + "last_session_date"
         SWRVE_START_SESSION_DATE_KEY: userID + "start_session_date"
         SWRVE_USER_RESOURCES_FILENAME: userID + "resources"
@@ -26,11 +29,13 @@ function SwrveConstants() as Object
         SWRVE_API_ENDPOINT: "api.swrve.com"
         SWRVE_CONTENT_ENDPOINT: "content.swrve.com"
         SWRVE_BATCH_URL: "/1/batch"
+        SWRVE_IDENTIFY_URL: "identity.swrve.com/identify"
         SWRVE_USER_RESOURCES_AND_CAMPAIGNS_URL: "/api/1/user_resources_and_campaigns"
         SWRVE_USER_RESOURCES_DIFF_URL: "/api/1/user_resources_diff"
 
         SWRVE_EVENT_TYPE_EVENT: "event"
         SWRVE_EVENT_TYPE_USER_UPDATE: "user"
+        SWRVE_EVENT_TYPE_DEVICE_UPDATE: "device_update"
         SWRVE_EVENT_TYPE_PURCHASE: "purchase"
         SWRVE_EVENT_TYPE_CURRENCY_GIVEN: "currency_given"
         SWRVE_EVENT_TYPE_IAP: "iap"

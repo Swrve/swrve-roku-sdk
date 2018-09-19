@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SwrveIdentifyTask" extends="Task" >
+
+<interface>
+  <field id="externalID" type="String" value=""/>
+  <field id="callbackFunction" type="String" value=""/>
+
+  <field id="results" type="assocarray" />
+</interface>
+
+<script type="text/brightscript" uri="pkg:/source/main.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveObject.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveRestClient.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveStorageManager.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveProduct.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveReward.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveEvents.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveDate.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveResourceManager.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveCampaigns.brs" />
+<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveClient.brs" />
+
+<script type="text/brightscript" >
+  <![CDATA[
+
+     sub init()
+      m.top.functionName = "request"
+    end sub
+
+    sub request()
+     
+      swrveClient = GetSwrveClientInstance()
+      print "[SwrveSDK] SwrveIdentifyTask - " + m.top.externalID
+
+      if m.top.externalID <> invalid
+          response = swrveClient.SwrveIdentify(swrveClient, m.top.externalID) 
+          m.top.results = response
+      end if
+    end sub
+
+  ]]>
+</script>
+
+</component>

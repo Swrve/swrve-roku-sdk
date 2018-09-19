@@ -21,8 +21,7 @@ function Swrve(config as Object, port as Object) as Object
                 apiKey: SWObject(config.apiKey).default("Unknown")
                 deviceInfo: SWObject(config.deviceInfo).default({})
                 deviceToken: SWObject(config.deviceToken).default("Unknown")
-                deviceId: SWObject(config.deviceId).default("Unknown")
-                deviceID: checkOrWriteQADeviceID()
+                uniqueDeviceID: checkOrWriteQADeviceID()
 
                 queueMaxSize: SWObject(config.queueMaxSize).default(1000)
                 flushingDelay:  SWObject(config.flushingDelay).default(10)
@@ -34,9 +33,10 @@ function Swrve(config as Object, port as Object) as Object
                 mockedGETResponseCode: SWObject(config.mockedGETResponseCode).default(200)
                 session_token : ""
                 isQAUser: false
-                mutedMode: false
+                stopped: false
             }
             installDate: CreateObject("roDateTime")
+            joinedDate: CreateObject("roDateTime")
             lastSession: CreateObject("roDateTime")
         }
 
@@ -57,6 +57,9 @@ function Swrve(config as Object, port as Object) as Object
         PostQueueAndFlush: PostQueueAndFlush
         SwrveForceFlush: SwrveForceFlush
         SwrveUserUpdate: SwrveUserUpdate
+        SwrveDeviceUpdate: SwrveDeviceUpdate
+        SwrveIdentify : SwrveIdentify
+        SwrveIdentifyWithUserID : SwrveIdentifyWithUserID
         SwrvePurchaseEvent: SwrvePurchaseEvent
         SwrveCurrencyGiven: SwrveCurrencyGiven
         SwrveUserUpdateWithDate: SwrveUserUpdateWithDate
@@ -67,21 +70,21 @@ function Swrve(config as Object, port as Object) as Object
         SwrveShutdown: SwrveShutdown
         SwrveSessionStart: SwrveSessionStart
         SwrveFirstSession: SwrveFirstSession
-        SwrveMute: SwrveMute
-        SwrveUnmute: SwrveUnmute
+        SwrveStop: SwrveStop
+        SwrveResume: SwrveStop
         SwrveGetUserResourcesDiff: SwrveGetUserResourcesDiff
         GetSessionStartDateAsSeconds: GetSessionStartDateAsSeconds
         setCustomCallback: setCustomCallback
         setNewResourcesCallback: setNewResourcesCallback
         setNewResourcesDiffCallback: setNewResourcesDiffCallback
-
+        setCustomMessageRender: setCustomMessageRender
         SwrveClickEvent: SwrveClickEvent
         SwrveImpressionEvent: SwrveImpressionEvent
         SwrveReturnedMessageEvent: SwrveReturnedMessageEvent
 
     }
 
-    this.private.config.device_id = di.GetDeviceUniqueId()
+    this.private.config.uniqueDeviceID = checkOrWriteQADeviceID()
 
     SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_ID_KEY, this.private.config.userID)
     ' Generate Token
@@ -123,6 +126,13 @@ function Swrve(config as Object, port as Object) as Object
     m.global.AddFields( {"forceFlush": false })
     m.global.observeField("forceFlush", port)
 
+     'This value will be used to notify the custom callback for rendering messages
+    m.global.AddField("messageWillRender", "assocarray", true)
+    m.global.setField("messageWillRender", {})
+
+    m.global.AddField("swrveSDKHasCustomRenderer", "boolean", true)
+    m.global.setField("swrveSDKHasCustomRenderer", false)
+
     ' True if there is no install date for this user, meaning it is the first ever session'
     firstSession = SwrveFirstEverSession()
 
@@ -140,6 +150,8 @@ function Swrve(config as Object, port as Object) as Object
     this.configuration.session_token = generateToken(startTimestamp, this.private.config.userId, this.private.config.apikey, this.private.config.appId)
 
     this.private.addreplace("installDate", checkOrWriteInstallDate())
+    this.private.addreplace("joinedDate", checkOrWriteJoinedDate())
+
     this.private.addreplace("lastSession", updateLastSessionDate())
     this.private.addreplace("startSession", GetSessionStartDate())
 
@@ -162,7 +174,7 @@ function Swrve(config as Object, port as Object) as Object
         'TODO Reset campaign states & global impression states'
         SwrveClearKeyFromPersistence(SwrveConstants().SWRVE_ETAG_FILENAME)    
         SwrveSessionStart(this)
-        SwrveUserUpdate(this, userInfosDictionary())
+        SwrveDeviceUpdate(this, userInfosDictionary())
         if firstSession
             SWLog("It is the first session ever. Send a first_session event")
             SwrveFirstSession(this)
@@ -170,7 +182,7 @@ function Swrve(config as Object, port as Object) as Object
     else
         SWLog("Session continued, keep the session alive")
     end if
-
+  
     return this
 end function
 
@@ -194,6 +206,7 @@ function GetSwrveClientInstance() as Object
     this.PostQueueAndFlush = PostQueueAndFlush
     this.SwrveForceFlush = SwrveForceFlush
     this.SwrveUserUpdate = SwrveUserUpdate
+    this.SwrveDeviceUpdate = SwrveDeviceUpdate
     this.SwrvePurchaseEvent = SwrvePurchaseEvent
     this.SwrveCurrencyGiven = SwrveCurrencyGiven
     this.SwrveUserUpdateWithDate = SwrveUserUpdateWithDate
@@ -205,8 +218,8 @@ function GetSwrveClientInstance() as Object
     this.SwrveSessionStart = SwrveSessionStart
     this.SwrveFirstSession = SwrveFirstSession
     this.GetCurrentUserID = GetCurrentUserID
-    this.SwrveMute = SwrveMute
-    this.SwrveUnmute = SwrveUnmute
+    this.SwrveStop = SwrveStop
+    this.SwrveResume = SwrveResume
     this.SwrveGetUserResourcesDiff = SwrveGetUserResourcesDiff
     this.resourceManager = SwrveResourceManager(this.userResources)
     this.GetSessionStartDateAsSeconds = GetSessionStartDateAsSeconds
@@ -216,6 +229,9 @@ function GetSwrveClientInstance() as Object
     this.SwrveClickEvent = SwrveClickEvent
     this.SwrveImpressionEvent = SwrveImpressionEvent
     this.SwrveReturnedMessageEvent = SwrveReturnedMessageEvent
+    this.setCustomMessageRender = setCustomMessageRender
+    this.SwrveIdentify = SwrveIdentify
+    this.SwrveIdentifyWithUserID = SwrveIdentifyWithUserID
 
     return this
 End function
@@ -233,14 +249,151 @@ Function GetStack(config as Object) as String
     end if
 End Function
 
-Function SwrveMute(swrveClient as Object)
+' Do not call from the render thread'
+Function SwrveIdentify(swrveClient as Object, externalID as String) as object
+    print "[SwrveSDK] SwrveIdentify - " + externalID
+    
+    flushAndClean(swrveClient)
+    SwrveStop(swrveClient)
+    shouldIdentify = false
+    m.dictionaryOfSwrveIDS = SwrveGetObjectFromPersistence(SwrveConstants().SWRVE_USER_IDS_KEY, invalid)
+    
+
+    ' Special case : Identify used wil nil or "" '
+    if externalID = ""
+        print "Anonymous identify"
+        di = CreateObject("roDeviceInfo")
+        udid = di.GetRandomUUID()
+        cfg = swrveClient.configuration
+        cfg.userID = udid
+        port = CreateObject("roMessagePort")
+        swrveClient = Swrve(cfg, port)   
+        SwrveResume(swrveClient)
+        SynchroniseSwrveInstance(swrveClient)     
+        return {
+            status : "Anonymous restart"
+            swrve_id : udid
+        }            
+    end if
+
+
+    if m.dictionaryOfSwrveIDS = invalid
+        m.dictionaryOfSwrveIDS = {}
+        shouldIdentify = true
+    else 
+        if m.dictionaryOfSwrveIDS[externalID] <> invalid
+            port = CreateObject("roMessagePort")
+            cfg = swrveClient.configuration
+            cfg.userID = m.dictionaryOfSwrveIDS[externalID]
+            swrveClient = Swrve(cfg, port)
+        else
+            shouldIdentify = true
+        end if
+    end if
+
+    res = {}
+    res.swrve_id = swrveClient.configuration.userID
+    if shouldIdentify
+        response = Identify(externalID)
+        if response.code = 403
+            di = CreateObject("roDeviceInfo")
+            udid = di.GetRandomUUID()
+            response = IdentifyWithUserID(udid, externalID)
+        end if
+
+        if response.code < 400
+            res.swrve_id = response.data.swrve_id
+            m.dictionaryOfSwrveIDs[externalID] = response.data.swrve_id
+            cfg = swrveClient.configuration
+
+            if cfg.userID <> response.data.swrve_id
+                cfg.userID = response.data.swrve_id
+                port = CreateObject("roMessagePort")
+        
+                swrveClient = Swrve(cfg, port)
+            end if
+            res.status = response.data.status
+        else
+            res.status = response.data
+        end if        
+    end if
+    
+    SwrveSaveObjectToPersistence(SwrveConstants().SWRVE_USER_IDS_KEY, m.dictionaryOfSwrveIDs)
+
+    SwrveResume(swrveClient)
+    SynchroniseSwrveInstance(swrveClient)
+
+    return res
+End Function
+
+Function SwrveIdentifyMocked(swrveClient as Object, externalID as Object, mockedResponse as String) as object
+    flushAndClean(swrveClient)
+    SwrveStop(swrveClient)
+    shouldIdentify = false
+    m.dictionaryOfSwrveIDS = SwrveGetObjectFromPersistence(SwrveConstants().SWRVE_USER_IDS_KEY, invalid)
+    if m.dictionaryOfSwrveIDS = invalid
+        m.dictionaryOfSwrveIDS = {}
+        shouldIdentify = true
+    else 
+        if m.dictionaryOfSwrveIDS[externalID] <> invalid
+            port = CreateObject("roMessagePort")
+            cfg = swrveClient.configuration
+            cfg.userID = m.dictionaryOfSwrveIDS[externalID]
+            swrveClient = Swrve(cfg, port)
+        else
+            shouldIdentify = true
+        end if
+    end if
+
+    res = {}
+    res.swrve_id = ""
+    if shouldIdentify
+        response = GetMockedUserResourcesAndCampaigns(mockedResponse)
+        if response.code = 403
+            di = CreateObject("roDeviceInfo")
+            udid = di.GetRandomUUID()
+            res.status = "external_user_id duplicate or bad userid"
+        end if
+
+        if response.code < 400
+            res.swrve_id = response.data.swrve_id
+            m.dictionaryOfSwrveIDs[externalID] = response.data.swrve_id
+            cfg = swrveClient.configuration
+
+            if cfg.userID <> response.data.swrve_id
+                cfg.userID = response.data.swrve_id
+                port = CreateObject("roMessagePort")
+        
+                swrveClient = Swrve(cfg, port)
+            end if
+            res.status = response.data.status
+        else
+            res.status = response.data
+        end if        
+    end if
+    
+    SwrveSaveObjectToPersistence(SwrveConstants().SWRVE_USER_IDS_KEY, m.dictionaryOfSwrveIDs)
+
+    SwrveResume(swrveClient)
+    SynchroniseSwrveInstance(swrveClient)
+
+    return res
+end function
+
+Function SwrveIdentifyWithUserID(swrveClient as Object, userID as String, externalID as Object) as object
+    print "[SwrveSDK] SwrveIdentifyWithUserID - " + userID + " - " externalID
+    return IdentifyWithUserID(userID, externalID)
+End Function
+
+
+Function SwrveStop(swrveClient as Object)
     'SaveQueueToPersistence(swrveClient)
-    swrveClient.configuration.mutedMode = true
+    swrveClient.configuration.stopped = true
     SynchroniseSwrveInstance(swrveClient)
 End Function
 
-Function SwrveUnmute(swrveClient as Object)
-    swrveClient.configuration.mutedMode = false
+Function SwrveResume(swrveClient as Object)
+    swrveClient.configuration.stopped = false
     SynchroniseSwrveInstance(swrveClient)
 End Function
 
@@ -314,6 +467,14 @@ End Function
 Function setNewResourcesCallback(callbackName as String)
     m.global = getGlobalAA().global
     m.global.observeField("swrveResourcesAndCampaigns", callbackName)
+End Function
+
+Function setCustomMessageRender(callbackName as String)
+    m.global = getGlobalAA().global
+    m.global.observeField("messageWillRender", callbackName)
+    swrve = GetSwrveClientInstance()
+    m.global.swrveSDKHasCustomRenderer = true
+    SynchroniseSwrveInstance(swrve)
 End Function
 
 Function setNewResourcesDiffCallback(callbackName as String)
@@ -510,6 +671,21 @@ Function userInfosDictionary() as Object
     localSeconds = dt.AsSeconds()
     utcSecondsOffset = localSeconds - utcSeconds
 
+    date = CreateObject("roDateTime")
+    date.fromISO8601String(checkOrWriteInstallDate())
+
+    strDate = StrI(date.GetYear()).trim()
+
+    if date.GetMonth() < 10
+        strDate += "0"
+    end if
+    strDate += strI(date.GetMonth()).Trim()
+
+    if date.GetDayOfMonth() < 10
+        strDate += "0"
+    end if
+    strDate += StrI(date.GetDayOfMonth()).Trim()
+    
     attributes = {
         "swrve.device_name": "Roku"+device.GetModel().Trim(),
         "swrve.os":"Roku",
@@ -521,7 +697,8 @@ Function userInfosDictionary() as Object
         "swrve.sdk_version": SwrveConstants().SWRVE_SDK_VERSION,
         "swrve.app_store":"google", 'Will have to be changed to roku when supported by backend'
         "swrve.timezone_name": device.GetTimeZone(),
-        "swrve.utc_offset_seconds": utcSecondsOffset
+        "swrve.utc_offset_seconds": utcSecondsOffset,
+        "swrve.install_date": strDate
     }
     return attributes
 End Function
@@ -539,14 +716,28 @@ function checkOrWriteInstallDate() as Object
     return dateString
 end function
 
+' Read the joined date. If it doesn't exist, save it to registry
+function checkOrWriteJoinedDate() as Object
+    
+    dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_JOINED_DATE_KEY, "")
+    if dateString = ""
+        date = CreateObject("roDateTime")
+        dateString = date.ToISOString()
+        SwrveSaveStringToPersistence(SwrveConstants().SWRVE_JOINED_DATE_KEY, dateString)
+    end if
+    SWLog("First install date " + dateString)
+    return dateString
+end function
+
+
 ' Read the QA device id . If it doesn't exist, save it to registry
 function checkOrWriteQADeviceID() as Object
     
-    did = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_QA_DEVICE_ID_KEY, "")
+    did = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_QA_UNIQUE_DEVICE_ID_KEY, "")
     if did = ""
-        nb = Rnd(65535) 'unsigned short int'
-        did = StrI(nb).Trim()
-        SwrveSaveStringToPersistence(SwrveConstants().SWRVE_QA_DEVICE_ID_KEY, did)
+        di = CreateObject("roDeviceInfo")
+        udid = di.GetRandomUUID()
+        SwrveSaveStringToPersistence(SwrveConstants().SWRVE_QA_UNIQUE_DEVICE_ID_KEY, udid)
     end if
     
     return did
@@ -671,6 +862,12 @@ End Function
 'returns the install date'
 Function GetInstallDate(swrveClient) as Integer
     date = checkOrWriteInstallDate()
+    return date.AsSeconds()
+End Function
+
+'returns the joined date'
+Function GetJoinedDate(swrveClient) as Integer
+    date = checkOrWriteJoinedDate()
     return date.AsSeconds()
 End Function
 

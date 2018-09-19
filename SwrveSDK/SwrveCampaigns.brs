@@ -70,6 +70,9 @@ End Function
 
 Function BuildArrayOfComplyingCampaigns(swrveClient as Object, event as object) as object
 	ids = []
+	if swrveClient = invalid
+		swrveClient = GetSwrveClientInstance()
+	end if
 	if swrveClient.userCampaigns.campaigns <> invalid and swrveClient.userCampaigns.campaigns.count() > 0
 		for each campaign in swrveClient.userCampaigns.campaigns
 			if EventValidForCampaign(event, campaign)
@@ -130,7 +133,14 @@ Function processShowIAM(swrveClient as Object, campaign as Object)
     swrveClient.SwrveReturnedMessageEvent(swrveClient, messageToShow)
 
 	swrveClient.SwrveForceFlush()
-	RenderIAM(messageToShow)
+
+	m.global = getGlobalAA().global
+
+	if m.global.swrveSDKHasCustomRenderer = true
+		m.global.messageWillRender = messageToShow
+	else
+		RenderIAM(messageToShow)
+	end if
 End Function
 
 Function RenderIAM(message as Object)

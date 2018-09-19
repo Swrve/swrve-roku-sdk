@@ -13,14 +13,14 @@ End Function
 
 Function AddSwrveUrlParametersToURL(urlString as String) as String
 	swrveConfig = GetSwrveClientInstance().configuration
-	swrveInstallDateEpochMilli = SwrveDateFromString(checkOrWriteInstallDate()).toMillisToken()
+	swrveJoinedDateEpochMilli = SwrveDateFromString(checkOrWriteJoinedDate()).toMillisToken()
 	appInfo = CreateObject("roAppInfo")
 	device = CreateObject("roDeviceInfo")
 
 	urlString += "?"
 	urlString += "&device_width=" + StrI(device.GetDisplaySize().w).Trim()
 	urlString += "&device_height=" + StrI(device.GetDisplaySize().h).Trim()
-	urlString += "&joined=" + swrveInstallDateEpochMilli
+	urlString += "&joined=" + swrveJoinedDateEpochMilli
 	urlString += "&api_key=" + swrveConfig.apiKey
 	urlString += "&appId=" + swrveConfig.appId
 	urlString += "&user=" + swrveConfig.userId
@@ -34,6 +34,39 @@ Function AddSwrveUrlParametersToURL(urlString as String) as String
 	urlString += "&orientation=both"
 
 	return urlString
+End Function
+
+
+Function Identify(newId as String) as object
+    print "[SwrveSDK] Identify - " + newId
+	swrveConfig = GetSwrveClientInstance().configuration
+
+	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + SwrveConstants().SWRVE_IDENTIFY_URL
+
+	payload = {}
+	payload.api_key = swrveConfig.apiKey
+	payload.swrve_id = swrveConfig.userId
+	payload.external_user_id = newId
+	payload.unique_device_id = swrveConfig.uniqueDeviceId
+	resp = GenericPost(urlString, payload)
+
+	return resp
+End Function
+
+Function IdentifyWithUserID(userID as String, newId as String) as object
+    print "[SwrveSDK] IdentifyWitUserID - " + newId
+	swrveConfig = GetSwrveClientInstance().configuration
+
+	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + SwrveConstants().SWRVE_IDENTIFY_URL
+
+	payload = {}
+	payload.api_key = swrveConfig.apiKey
+	payload.swrve_id = userID
+	payload.external_user_id = newId
+	payload.unique_device_id = swrveConfig.uniqueDeviceId
+	resp = GenericPost(urlString, payload)
+
+	return resp
 End Function
 
 'Downloads and returns the User resources and campaign'

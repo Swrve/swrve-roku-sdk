@@ -14,4 +14,18 @@ use Swrve features. -->
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveResourceManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveCampaigns.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveClient.brs" />
+    <script type="text/brightscript" >
+        <![CDATA[ 
+        
+          function SwrveIdentifyExternalIDWithCallback(externalID as String, callbackFunction as String) as void
+            print "[SwrveSDK] IdentifyExternalIDWithCallback - " + externalID
+            m.SwrveIdentifyTask = CreateObject("roSGNode", "SwrveIdentifyTask")
+            m.SwrveIdentifyTask.control = "WAIT"
+            m.SwrveIdentifyTask.externalID = externalID
+            m.SwrveIdentifyTask.control = "RUN"
+
+            m.SwrveIdentifyTask.observeField("results", callbackFunction)
+          end function
+            ]]>
+        </script>
 </component>
