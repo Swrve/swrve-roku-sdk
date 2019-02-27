@@ -1,5 +1,14 @@
 Function GetGlobalDisplayRules(swrveClient as Object) as Object
-	return swrveClient.userCampaigns.rules
+	globalDisplayRules = swrveClient.userCampaigns.rules
+	if globalDisplayRules = invalid
+		return {
+					delay_first_message: SwrveConstants().SWRVE_DEFAULT_DELAY_FIRST_MESSAGE
+					min_delay_between_messages: SwrveConstants().SWRVE_DEFAULT_MIN_DELAY
+					max_messages_per_session: SwrveConstants().SWRVE_DEFAULT_MAX_SHOWS
+					}
+	else
+		return globalDisplayRules
+	end if
 End Function
 
 Function GetDisplayRulesFromCampaignWithID(swrveClient as Object, id as Integer) as Object
@@ -75,9 +84,11 @@ Function BuildArrayOfComplyingCampaigns(swrveClient as Object, event as object) 
 	end if
 	if swrveClient.userCampaigns.campaigns <> invalid and swrveClient.userCampaigns.campaigns.count() > 0
 		for each campaign in swrveClient.userCampaigns.campaigns
+		if campaign.messages <> invalid
 			if EventValidForCampaign(event, campaign)
 				ids.push(campaign)
 			end if
+		end if
 		end for
 	end if
 	return ids
@@ -130,7 +141,7 @@ Function processShowIAM(swrveClient as Object, campaign as Object)
 	messageToShow = priorityMessage(campaign)
 	swrveClient = GetSwrveClientInstance()
         
-    swrveClient.SwrveReturnedMessageEvent(swrveClient, messageToShow)
+  swrveClient.SwrveReturnedMessageEvent(swrveClient, messageToShow)
 
 	swrveClient.SwrveForceFlush()
 
@@ -185,9 +196,15 @@ Function CanShowCampaignAccordingToGlobalRules(campaign as Object) as Boolean
 	min_delay_between_messages = globalRules.min_delay_between_messages
 	max_messages_per_session = globalRules.max_messages_per_session
 
+	'Take the rules and ensure there is a default if its invalid'
+	if globalRules.delay_first_message = invalid then delay_first_message = SwrveConstants().SWRVE_DEFAULT_DELAY_FIRST_MESSAGE
+	if min_delay_between_messages = invalid then min_delay_between_messages = SwrveConstants().SWRVE_DEFAULT_MIN_DELAY
+	if max_messages_per_session = invalid then max_messages_per_session = SwrveConstants().SWRVE_DEFAULT_MAX_SHOWS
+
 	sessionStart = swrveClient.GetSessionStartDateAsSeconds()
 
-	
+	SWLog("{Campaign throttle limit} Too soon after launch.")
+
 	'Checking if the globl rules state that the first message needs to be delayed, 
 	'and if we're too early or not to show the message.
 	if now - sessionStart < delay_first_message

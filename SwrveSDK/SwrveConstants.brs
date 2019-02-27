@@ -2,7 +2,7 @@
 function SwrveConstants() as Object
     userID = SwrveGetStringFromPersistence("userID", "")
     return {
-        SWRVE_SDK_VERSION: "Roku 2.0"
+        SWRVE_SDK_VERSION: "Roku 2.0.1"
 
         SWRVE_INSTALL_DATE_KEY: "install_date"
         SWRVE_JOINED_DATE_KEY: userID + "install_date"
@@ -54,5 +54,8 @@ function SwrveConstants() as Object
         SWRVE_BUTTON_CUSTOM: "CUSTOM"
         SWRVE_FHD_WIDTH: 1920
         SWRVE_FHD_HEIGHT: 1080
+        SWRVE_DEFAULT_DELAY_FIRST_MESSAGE: 150
+        SWRVE_DEFAULT_MAX_SHOWS: 99999
+        SWRVE_DEFAULT_MIN_DELAY: 55
     }
 end function

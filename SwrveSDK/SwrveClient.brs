@@ -34,6 +34,7 @@ function Swrve(config as Object, port as Object) as Object
                 session_token : ""
                 isQAUser: false
                 stopped: false
+                identifiedOnAnotherDevice: SWObject(config.identifiedOnAnotherDevice).default(false)
             }
             installDate: CreateObject("roDateTime")
             joinedDate: CreateObject("roDateTime")
@@ -133,7 +134,7 @@ function Swrve(config as Object, port as Object) as Object
     m.global.AddField("swrveSDKHasCustomRenderer", "boolean", true)
     m.global.setField("swrveSDKHasCustomRenderer", false)
 
-    ' True if there is no install date for this user, meaning it is the first ever session'
+    ' True if there is no joined date for this user, meaning it is the first ever session for this user'
     firstSession = SwrveFirstEverSession()
 
     'Checks the time elapsed from the last time the app was alive. If greater than the delay in the config, then we should send a session start event'
@@ -175,12 +176,13 @@ function Swrve(config as Object, port as Object) as Object
         SwrveClearKeyFromPersistence(SwrveConstants().SWRVE_ETAG_FILENAME)    
         SwrveSessionStart(this)
         SwrveDeviceUpdate(this, userInfosDictionary())
-        if firstSession
-            SWLog("It is the first session ever. Send a first_session event")
-            SwrveFirstSession(this)
-        end if
     else
         SWLog("Session continued, keep the session alive")
+    end if
+
+    if firstSession and this.private.config.identifiedOnAnotherDevice = false
+         SWLog("It is the first session ever and the user hasn't identified on another device. Send a first_session event")
+         SwrveFirstSession(this)
     end if
   
     return this
@@ -252,6 +254,9 @@ End Function
 ' Do not call from the render thread'
 Function SwrveIdentify(swrveClient as Object, externalID as String) as object
     print "[SwrveSDK] SwrveIdentify - " + externalID
+
+    cfg = swrveClient.configuration
+    cfg.identifiedOnAnotherDevice = false
     
     flushAndClean(swrveClient)
     SwrveStop(swrveClient)
@@ -264,7 +269,6 @@ Function SwrveIdentify(swrveClient as Object, externalID as String) as object
         print "Anonymous identify"
         di = CreateObject("roDeviceInfo")
         udid = di.GetRandomUUID()
-        cfg = swrveClient.configuration
         cfg.userID = udid
         port = CreateObject("roMessagePort")
         swrveClient = Swrve(cfg, port)   
@@ -283,7 +287,6 @@ Function SwrveIdentify(swrveClient as Object, externalID as String) as object
     else 
         if m.dictionaryOfSwrveIDS[externalID] <> invalid
             port = CreateObject("roMessagePort")
-            cfg = swrveClient.configuration
             cfg.userID = m.dictionaryOfSwrveIDS[externalID]
             swrveClient = Swrve(cfg, port)
         else
@@ -304,10 +307,10 @@ Function SwrveIdentify(swrveClient as Object, externalID as String) as object
         if response.code < 400
             res.swrve_id = response.data.swrve_id
             m.dictionaryOfSwrveIDs[externalID] = response.data.swrve_id
-            cfg = swrveClient.configuration
 
             if cfg.userID <> response.data.swrve_id
                 cfg.userID = response.data.swrve_id
+                cfg.identifiedOnAnotherDevice = true
                 port = CreateObject("roMessagePort")
         
                 swrveClient = Swrve(cfg, port)
@@ -327,6 +330,10 @@ Function SwrveIdentify(swrveClient as Object, externalID as String) as object
 End Function
 
 Function SwrveIdentifyMocked(swrveClient as Object, externalID as Object, mockedResponse as String) as object
+
+    cfg = swrveClient.configuration
+    cfg.identifiedOnAnotherDevice = false
+
     flushAndClean(swrveClient)
     SwrveStop(swrveClient)
     shouldIdentify = false
@@ -358,10 +365,11 @@ Function SwrveIdentifyMocked(swrveClient as Object, externalID as Object, mocked
         if response.code < 400
             res.swrve_id = response.data.swrve_id
             m.dictionaryOfSwrveIDs[externalID] = response.data.swrve_id
-            cfg = swrveClient.configuration
 
             if cfg.userID <> response.data.swrve_id
                 cfg.userID = response.data.swrve_id
+                cfg.identifiedOnAnotherDevice = true
+
                 port = CreateObject("roMessagePort")
         
                 swrveClient = Swrve(cfg, port)
@@ -771,7 +779,7 @@ end function
 
 
 function SwrveFirstEverSession() as Boolean
-    dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_INSTALL_DATE_KEY, "")
+    dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_JOINED_DATE_KEY, "")
     if dateString = ""
         return true
     else

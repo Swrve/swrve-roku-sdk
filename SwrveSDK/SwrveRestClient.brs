@@ -24,7 +24,7 @@ Function AddSwrveUrlParametersToURL(urlString as String) as String
 	urlString += "&api_key=" + swrveConfig.apiKey
 	urlString += "&appId=" + swrveConfig.appId
 	urlString += "&user=" + swrveConfig.userId
-	urlString += "&app_store=google" 'can't be roku right now (21.01/2018) because it is not supported by the backend. Will change back to roku once it's fixed.
+	urlString += "&app_store=roku"
 	urlString += "&app_version=" + appInfo.GetVersion()
 	urlString += "&version=" + swrveConfig.version
 	urlString += "&conversation_version=4" 'hardcoded to get the new CDN paths'
@@ -40,8 +40,8 @@ End Function
 Function Identify(newId as String) as object
     print "[SwrveSDK] Identify - " + newId
 	swrveConfig = GetSwrveClientInstance().configuration
-
-	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + SwrveConstants().SWRVE_IDENTIFY_URL
+	stack = GetStack(swrveConfig)
+	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
 
 	payload = {}
 	payload.api_key = swrveConfig.apiKey
@@ -56,8 +56,8 @@ End Function
 Function IdentifyWithUserID(userID as String, newId as String) as object
     print "[SwrveSDK] IdentifyWitUserID - " + newId
 	swrveConfig = GetSwrveClientInstance().configuration
-
-	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + SwrveConstants().SWRVE_IDENTIFY_URL
+	stack = GetStack(swrveConfig)
+	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
 
 	payload = {}
 	payload.api_key = swrveConfig.apiKey
@@ -147,7 +147,9 @@ End Function
 
 'Will send some JSON payload to the batch endpoint
 Function SendBatchPOST(payload as Object) as Object
-	urlString = SwrveConstants().SWRVE_HTTPS + SwrveConstants().SWRVE_API_ENDPOINT + SwrveConstants().SWRVE_BATCH_URL
+	swrveConfig = GetSwrveClientInstance().configuration
+	stack = GetStack(swrveConfig)
+	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_API_ENDPOINT + SwrveConstants().SWRVE_BATCH_URL
 	return GenericPOST(urlString, payload)
 End Function
 
@@ -155,17 +157,18 @@ End Function
 Function GenericPOST(url as String, data as Object) as Object
 	
 	swrveConfig = GetSwrveClientInstance().configuration
-	if swrveConfig.mockHTTPPOSTResponses = true
-		return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response"}
-	end if
 
 	req = RequestObject()
 	' Set up URL
-	url = GetStack(swrveConfig) + url
-	req.SetURL(url)
+	req.SetURL(url.Trim())
+
+	if swrveConfig.mockHTTPPOSTResponses = true
+		return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim()}
+	end if
 
 	' make the data a json string
 	strData = FormatJson(data)
+
 
 	SWLog("Sending POST to " + url)
     requestSuccess = false
@@ -217,11 +220,13 @@ End Function
 Function GenericGET(url as String) as Object
 	swrveConfig = GetSwrveClientInstance().configuration
 
-	if swrveConfig.mockHTTPGETResponses = true
-		return { Code: swrveConfig.mockedGETResponseCode, Data: "Mocked response"}
-	end if
 	req = RequestObject()
 	req.SetURL(url.Trim())
+
+	if swrveConfig.mockHTTPGETResponses = true
+		return { Code: swrveConfig.mockedGETResponseCode, Data: {"user_resources" : {} }, requestUrl:url.Trim()}
+	end if
+
 	requestSuccess = false
 
 	retries = swrveConfig.httpMaxRetries

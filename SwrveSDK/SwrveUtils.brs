@@ -111,10 +111,13 @@ Function SwrveAddImageToNode(node as Object, imageID as String, x as float, y as
     img.width = width
     img.height = height
     img.loadDisplayMode = displayMode
-    screenCenterX = SwrveConstants().SWRVE_FHD_WIDTH/2.0
+
+	supportedRes = SWGetSupportedResolution()
+
+    screenCenterX = supportedRes.width/2.0
     rightX = screenCenterX + (x-width/2)
 
-    screenCentery = SwrveConstants().SWRVE_FHD_HEIGHT/2.0
+    screenCenterY = supportedRes.height/2.0
     rightY = screenCenterY + (y-height/2)
   
     img.translation = [rightX,  rightY]
@@ -130,8 +133,11 @@ End Function
 Function SwrveAddButtonToNode(node as Object, imageID as String, x as float, y as float, scale as object) as Object
 	di = CreateObject("roDeviceInfo")
     screenSize = di.GetDisplaySize()
-    screenRatioX = SwrveConstants().SWRVE_FHD_WIDTH / screenSize.w
-    screenRatioY = SwrveConstants().SWRVE_FHD_HEIGHT / screenSize.h
+
+	supportedRes = SWGetSupportedResolution()
+
+    screenRatioX = supportedRes.width / screenSize.w
+    screenRatioY = supportedRes.height / screenSize.h
    
     img = createObject("roSGNode", "Poster")
     img.id = imageID
@@ -156,10 +162,10 @@ Function SwrveAddButtonToNode(node as Object, imageID as String, x as float, y a
     btn.focusedIconUri = " "
     btn.iconUri = " "
 
-    screenCenterX = SwrveConstants().SWRVE_FHD_WIDTH/2.0
+    screenCenterX = supportedRes.width/2.0
     rightX = screenCenterX + (x*screenRatioX-btn.maxWidth/2)
 
-    screenCentery = SwrveConstants().SWRVE_FHD_HEIGHT/2.0
+    screenCenterY = supportedRes.height/2.0
     rightY = screenCenterY + (y*screenRatioY-btn.height/2)
  
     btn.translation = [rightX,  rightY]
@@ -176,5 +182,26 @@ Function SWCopy(obj as Object) as Object
 	for each key in obj.Keys()
 		res[key] = obj[key]
 	end for
+	return res
+End Function
+
+'Util function depnding on resolution, return supported width and height'
+Function SWGetSupportedResolution()
+
+	supportedWidth =  SwrveConstants().SWRVE_FHD_WIDTH
+	supportedHeight = SwrveConstants().SWRVE_FHD_HEIGHT
+
+	appInfo = CreateObject("roAppInfo")
+    ui_resolutions = appInfo.GetValue("ui_resolutions").trim()
+	if LCase(ui_resolutions) <> "fhd"
+		di = CreateObject("roDeviceInfo")
+		uiRes = di.GetUIResolution() 
+		supportedWidth =  uiRes.width
+		supportedHeight = uiRes.height
+	end if
+
+	res = {}
+	res["width"] = supportedWidth
+	res["height"] = supportedHeight
 	return res
 End Function
