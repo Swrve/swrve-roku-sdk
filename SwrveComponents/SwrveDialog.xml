@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<!-- This will serve as a base class for groups. Users should extend their own groups from this in order to
+use Swrve features. -->
+<component name="SwrveDialog" extends="Dialog">
+    <interface>
+        <field id="setFocus" type="boolean" alwaysNotify="true" />
+        <field id="iam" type="assocarray" alwaysNotify="true" />
+        <field id="asset_location" type="string" alwaysNotify="true" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveStorageManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveSDK.brs" />
+    <script type="text/brightscript" uri="pkg:/components/SwrveComponents/SwrveDialog.brs" />
+</component>

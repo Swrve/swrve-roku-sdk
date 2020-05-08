@@ -1,71 +1,73 @@
+' Used in the main thread and in the Render thread. 
+
 'Util function to log strings'
 function SWLog(msg as String)
-	if m.global.swrve.configuration.debug
+	if GetGlobalAA().global.SwrveDebug
 		print "[SwrveSDK] " + msg
 	end if
 end function
 
 'Util function to log ints'
 function SWLogI(msg as Integer)
-	if m.global.swrve.configuration.debug
+	if GetGlobalAA().global.SwrveDebug
 		print "[SwrveSDK] " + StrI(msg)
 	end if
 end function
 
 'Util function to log floats'
 function SWLogF(msg as Float)
-	if m.global.swrve.configuration.debug
+	if GetGlobalAA().global.SwrveDebug
 		print "[SwrveSDK] " + Str(msg)
 	end if
 end function
 
 'Safely returns the user resources from the dictionary'
-Function GetUserResourcesFromDictionarySafe(dict as Object) as Object
-	if DictionaryHasUserResource(dict) 
+function SwrveGetUserResourcesFromDictionarySafe(dict as Object) as Object
+	if SwrveDictionaryHasUserResource(dict) 
 		return dict.data.user_resources
 	else 
 		return {}
 	end if
-End Function 
+end function 
 
 'Safely returns the campaigns from the dictionary'
-Function GetUserCampaignsFromDictionarySafe(dict as Object) as Object
-	if DictionaryHasUserCampaigns(dict) 
+function SwrveGetUserCampaignsFromDictionarySafe(dict as Object) as Object
+	if SwrveDictionaryHasUserCampaigns(dict) 
 		return dict.data.campaigns
 	else 
 		return {}
 	end if
-End Function 
+end function 
 
 'Safely returns true if user is QA user'
-Function IsQAUser(dict as Object) as Object
+function SwrveIsQAUser(dict as Object) as Object
 	if dict <>invalid and dict.code = 200 and  dict.data <> invalid and dict.data.qa <> invalid
 		return true
 	else 
 		return false
 	end if
-End Function 
+end function 
 
 'Returns true if dictionary is not malformed and contains user resources'
-Function DictionaryHasUserResource(dict as Object) as Boolean
+function SwrveDictionaryHasUserResource(dict as Object) as Boolean
 	if dict <> invalid and dict.code = 200 and dict.data <> invalid and dict.data.user_resources <> invalid
 		return true
 	else 
 		return false
 	end if
-End Function
+end function
 
 'Returns true if dictionary is not malformed and contains user campaigns'
-Function DictionaryHasUserCampaigns(dict as Object) as Boolean
+function SwrveDictionaryHasUserCampaigns(dict as Object) as Boolean
 	if dict <> invalid and dict.code = 200 and dict.data <> invalid and dict.data.campaigns <> invalid
 		return true
 	else 
 		return false
 	end if
-End Function
+end function
 
 ' Get from registry the latest seqnum, increment it, and save it back.
-Function SwrveGetSeqNum() as Integer
+function SwrveGetSeqNum() as Integer
 
 	'-1 in case we never used it before, it'll get incremented to 0
 	previousSNAsString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_SEQNUM, "-1")
@@ -77,7 +79,7 @@ Function SwrveGetSeqNum() as Integer
 end Function
 
 ' Returns an md5 hashed cipher of a string'
-Function md5(str as String) as Object
+function SwrveMd5(str as String) as Object
 
 	ba1 = CreateObject("roByteArray")
 	ba1.FromAsciiString(str)
@@ -87,23 +89,23 @@ Function md5(str as String) as Object
 	result = digest.Final()
 	return result
 
-End Function
+end function
 
-Function generateToken(time as String, userId as String, apiKey as String, appId as String)
-    hash = md5(userId + time + apiKey)
+function SwrveGenerateToken(time as String, userId as String, apiKey as String, appId as String)
+    hash = SwrveMd5(userId + time + apiKey)
     token = appId + "=" + userId + "=" + time + "=" + hash
     return token
-End Function
+end function
 
 'Util function to display an image downloaded to assets folder.
 'Used this way SwrveAddImageToNode(m.top, "image_1", 150, 150, 1.0)
 'DisplayMode is optional and can be noScale, scaleToFit, scaleToFill, scaleToZoom'
-Function SwrveAddImageToNode(node as Object, imageID as String, x as float, y as float, scale as object, displayMode = "noScale" as String) as Object
+function SwrveAddImageToNode(node as Object, imageID as String, x as float, y as float, scale as object, displayMode = "noScale" as String) as Object
 	
     img = createObject("roSGNode", "Poster")
     img.id = imageID
     img.loadSync = true
-    img.uri = SwrveConstants().SWRVE_ASSETS_LOCATION + imageID
+    img.uri = m.top.asset_location + imageID
 
     width = img.bitmapWidth * scale.w
     height = img.bitmapHeight * scale.h
@@ -124,13 +126,13 @@ Function SwrveAddImageToNode(node as Object, imageID as String, x as float, y as
     node.appendChild(img)
 
     return img
-End Function
+end function
 
 
 'Util function to display a button downloaded 
 'Used this way SwrveAddButtonToNode(m.top, "image_1", 150, 150, 1.0)
 'DisplayMode is optional and can be noScale, scaleToFit, scaleToFill, scaleToZoom'
-Function SwrveAddButtonToNode(node as Object, imageID as String, x as float, y as float, scale as object) as Object
+function SwrveAddButtonToNode(node as Object, imageID as String, x as float, y as float, scale as object) as Object
 	di = CreateObject("roDeviceInfo")
     screenSize = di.GetDisplaySize()
 
@@ -142,7 +144,7 @@ Function SwrveAddButtonToNode(node as Object, imageID as String, x as float, y a
     img = createObject("roSGNode", "Poster")
     img.id = imageID
     img.loadSync = true
-    img.uri = SwrveConstants().SWRVE_ASSETS_LOCATION + imageID
+    img.uri = m.top.asset_location + imageID
     img.translation = [20, 20]
 
     width = img.bitmapWidth * scale.w
@@ -174,19 +176,19 @@ Function SwrveAddButtonToNode(node as Object, imageID as String, x as float, y a
     node.appendChild(btn)
 
     return btn
-End Function
+end function
 
 'Util function for copying the whole object, not just as a reference'
-Function SWCopy(obj as Object) as Object
+function SwrveCopy(obj as Object) as Object
 	res = {}
 	for each key in obj.Keys()
 		res[key] = obj[key]
 	end for
 	return res
-End Function
+end function
 
 'Util function depnding on resolution, return supported width and height'
-Function SWGetSupportedResolution()
+function SWGetSupportedResolution()
 
 	supportedWidth =  SwrveConstants().SWRVE_FHD_WIDTH
 	supportedHeight = SwrveConstants().SWRVE_FHD_HEIGHT
@@ -195,13 +197,68 @@ Function SWGetSupportedResolution()
     ui_resolutions = appInfo.GetValue("ui_resolutions").trim()
 	if LCase(ui_resolutions) <> "fhd"
 		di = CreateObject("roDeviceInfo")
-		uiRes = di.GetUIResolution() 
-		supportedWidth =  uiRes.width
-		supportedHeight = uiRes.height
+		uiRes = di.GetDisplaySize() 
+		supportedWidth =  uiRes.w
+		supportedHeight = uiRes.h
 	end if
 
 	res = {}
 	res["width"] = supportedWidth
 	res["height"] = supportedHeight
 	return res
-End Function
+end function
+
+
+'------------- Duplicated from Swrve Client for Render Thread ------------'
+' Read from persistence'
+function SwrveUtilGetSessionStartDateAsReadable() as String
+  dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_START_SESSION_DATE_KEY, "")
+  return dateString
+end function
+
+function SwrveUtilGetCurrentUserID() as String
+  dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_ID_KEY, "")
+  return dateString
+end function
+
+'------------- Date Utils --------------'
+function SwrvePrintLoadingTimeFromAppLaunch(msg as String) as Void
+  date = CreateObject("roDateTime")
+  milli = date.GetMilliSeconds() / 1000
+  milliDiff = milli - (m.global.startmilli / 1000)
+
+  sec = date.AsSeconds()
+  secDiff = sec - m.global.startseconds
+
+  if(milliDiff < 0)
+    milliDiff = 1 + milliDiff
+    secDiff = secDiff - 1
+  end if
+
+  SwrvePrintMsg(msg + ": " + (secDiff + milliDiff).toStr() + " seconds since app launch")
+end function
+
+function SwrvePrintLoadingTimeFromTimestamp(msg as String, time as Object) as Void
+  date = CreateObject("roDateTime")
+  milli = date.GetMilliSeconds() 
+  milliDiff = milli - time.ms 
+  milliDiff = milliDiff / 1000
+  sec = date.AsSeconds()
+  secDiff = sec - time.s
+
+  if(milliDiff < 0)
+    milliDiff = 1 + milliDiff
+    secDiff = secDiff - 1
+  end if
+
+  SwrvePrintMsg(msg + ": " + (secDiff + milliDiff).toStr() + " seconds")
+end function
+
+function SwrvePrintMsg(msg)
+  SWLog("--- [BENCHMARKING] --- " + msg)
+end function
+
+function SwrveGetTimestamp() as Object
+  d = CreateObject("roDateTime")
+  return {s:d.AsSeconds(), ms:d.GetMilliSeconds()}
+end function

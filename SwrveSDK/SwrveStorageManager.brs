@@ -1,5 +1,5 @@
 ' Utils function all related to storing and restoring
-Function SwrveStorageManager() as Object
+function SwrveStorageManager() as Object
 	this = {}
 	this.SwrveSaveStringToFile = SwrveSaveStringToFile
 	this.SwrveGetStringFromFile = SwrveGetStringFromFile
@@ -17,20 +17,20 @@ Function SwrveStorageManager() as Object
 	this.SwrveSaveObjectToPersistence = SwrveSaveObjectToPersistence
 	this.SwrveClearWholePersistence = SwrveClearWholePersistence
 	return this
-End Function
+end function
 
-Function SwrveGetEventStoragePath() as String
+function SwrveGetEventStoragePath() as String
 	return SwrveConstants().SWRVE_EVENTS_STORAGE
-End Function
+end function
 
 ' Saves the queue to persistent storage so that we can restore it in between sessions
-Function SwrveSaveQueueToStorage(events as Object)
+function SwrveSaveQueueToStorage(events as Object)
 	strData = FormatJson(events)
 	SwrveSaveStringToPersistence(SwrveGetEventStoragePath(), strData)
-End Function
+end function
 
 ' Restore what was saved from the buffer'
-Function SwrveGetQueueFromStorage() as Object
+function SwrveGetQueueFromStorage() as Object
 	eventsString = SwrveGetStringFromPersistence(SwrveGetEventStoragePath())
 	if eventsString = ""
 		return eventsString
@@ -39,49 +39,49 @@ Function SwrveGetQueueFromStorage() as Object
 End function
 
 'Clear the queue that was saved to persistent storage'
-Function SwrveClearQueueFromStorage()
+function SwrveClearQueueFromStorage()
 	strData = FormatJson([])
 	SwrveSaveStringToPersistence(SwrveGetEventStoragePath(), strData)
-End Function
+end function
 
-Function SwrveClearKeyFromStorage(key as String)
+function SwrveClearKeyFromStorage(key as String)
 	SwrveSaveStringToFile("", key)	
-End Function
+end function
 
-Function SwrveClearKeyFromPersistence(key as String)
+function SwrveClearKeyFromPersistence(key as String)
 	SwrveSaveStringToPersistence(key, "")
-End Function
+end function
 
 ' Save to file, will not persist between launches'
-Function SwrveSaveObjectToFile(obj as Object, filename as String) as Boolean
+function SwrveSaveObjectToFile(obj as Object, filename as String) as Boolean
 	success = WriteAsciiFile(filename, FormatJSON(obj))
 	return success
-End Function
+end function
 
 'Read object from tmp:/ storage' 
-Function SwrveGetObjectFromFile(filename as String) as Object
+function SwrveGetObjectFromFile(filename as String) as Object
 	val = ReadAsciiFile(filename)
 	if val = ""
 		return ""
 	else 		
 		return ParseJSON(val)
 	end if
-End Function
+end function
 
 
 ' Save to file, will not persist between launches'
-Function SwrveSaveStringToFile(str as String, filename as String) as Boolean
+function SwrveSaveStringToFile(str as String, filename as String) as Boolean
 	success = WriteAsciiFile(filename, str)
 	return success
-End Function
+end function
 
 'Read string from tmp:/ storage' 
-Function SwrveGetStringFromFile(filename as String) as String
+function SwrveGetStringFromFile(filename as String) as String
 	return ReadAsciiFile(filename)
-End Function
+end function
 
 ' Read from persistence'
-Function SwrveGetObjectFromPersistence(source as String, default = "" as Dynamic) As Object
+function SwrveGetObjectFromPersistence(source as String, default = "" as Dynamic) As Object
     sec = CreateObject("roRegistrySection", source)
     if sec.Exists(source)
     	val = sec.Read(source)
@@ -92,7 +92,7 @@ Function SwrveGetObjectFromPersistence(source as String, default = "" as Dynamic
         end if
     end if
     return default
-End Function
+end function
 
 'Save to registry (persistent storage, do not use for large files)'
 Sub SwrveSaveObjectToPersistence(destination As String, value As Object)
@@ -106,13 +106,13 @@ Sub SwrveSaveObjectToPersistence(destination As String, value As Object)
 End Sub
 
 ' Read from persistence'
-Function SwrveGetStringFromPersistence(source as String, default = "" as Dynamic) As String
+function SwrveGetStringFromPersistence(source as String, default = "" as Dynamic) As String
     sec = CreateObject("roRegistrySection", source)
     if sec.Exists(source)
         return sec.Read(source)
     end if
     return default
-End Function
+end function
 
 'Save to registry (persistent storage, do not use for large files)'
 Sub SwrveSaveStringToPersistence(destination As String, value As String)
@@ -121,32 +121,32 @@ Sub SwrveSaveStringToPersistence(destination As String, value As String)
     sec.Flush()
 End Sub
 
-Function SwrveIsCampaignFileValid() as Boolean
+function SwrveIsCampaignFileValid() as Boolean
 	persistentCampaign = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_FILENAME)
 	persistentSignature = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_SIGNATURE_FILENAME)
-	if persistentSignature = md5(persistentCampaign)
+	if persistentSignature = SwrveMd5(persistentCampaign)
 		return true
 	else
 		SWLog("Campaign file has been compromised. Reloading.")
 		return false
 	end if
-End Function
+end function
 
-Function SwrveIsResourceFileValid() as Boolean
+function SwrveIsResourceFileValid() as Boolean
 	persistentResource = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_RESOURCES_FILENAME)
 	persistentSignature = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_RESOURCES_SIGNATURE_FILENAME)
-	if persistentSignature = md5(persistentResource)
+	if persistentSignature = SwrveMd5(persistentResource)
 		return true
 	else
 		SWLog("Resource file has been compromised. Reloading.")
 		return false
 	end if
-End Function
+end function
 
-Function SwrveClearWholePersistence()
+function SwrveClearWholePersistence()
 	ro = CreateObject("roRegistry")
     for each section in ro.GetSectionList()
         ro.delete(section)
     end for
     ro.flush()
-End Function
+end function

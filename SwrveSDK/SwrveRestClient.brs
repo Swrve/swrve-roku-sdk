@@ -1,4 +1,4 @@
-Function RequestObject() as Object
+function RequestObject() as Object
 	req = CreateObject("roUrlTransfer")
 	port = CreateObject("roMessagePort")
 	' Set up request port. Note this will fail if called from the render thread
@@ -9,10 +9,10 @@ Function RequestObject() as Object
 	req.AddHeader("Content-Type", "application/json")
 
 	return req
-End Function
+end function
 
-Function AddSwrveUrlParametersToURL(urlString as String) as String
-	swrveConfig = GetSwrveClientInstance().configuration
+function AddSwrveUrlParametersToURL(urlString as String) as String
+	swrveConfig = m.swrve_config
 	swrveJoinedDateEpochMilli = SwrveDateFromString(checkOrWriteJoinedDate()).toMillisToken()
 	appInfo = CreateObject("roAppInfo")
 	device = CreateObject("roDeviceInfo")
@@ -34,12 +34,11 @@ Function AddSwrveUrlParametersToURL(urlString as String) as String
 	urlString += "&orientation=both"
 
 	return urlString
-End Function
+end function
 
 
-Function Identify(newId as String) as object
-    print "[SwrveSDK] Identify - " + newId
-	swrveConfig = GetSwrveClientInstance().configuration
+function Identify(newId as String, observer as Dynamic) as object
+	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
 
@@ -48,14 +47,18 @@ Function Identify(newId as String) as object
 	payload.swrve_id = swrveConfig.userId
 	payload.external_user_id = newId
 	payload.unique_device_id = swrveConfig.uniqueDeviceId
-	resp = GenericPost(urlString, payload)
+	
+	if swrveConfig.mockHTTPPOSTResponses = true
+		return GenericPOST(urlString, payload, observer)
+	else 
+		GenericPOST(urlString, payload, observer)
+	end if
 
-	return resp
-End Function
+	return Invalid
+end function
 
-Function IdentifyWithUserID(userID as String, newId as String) as object
-    print "[SwrveSDK] IdentifyWitUserID - " + newId
-	swrveConfig = GetSwrveClientInstance().configuration
+function IdentifyWithUserID(userID as String, newId as String, observer as String) as object
+	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
 
@@ -64,14 +67,20 @@ Function IdentifyWithUserID(userID as String, newId as String) as object
 	payload.swrve_id = userID
 	payload.external_user_id = newId
 	payload.unique_device_id = swrveConfig.uniqueDeviceId
-	resp = GenericPost(urlString, payload)
+	
+	if swrveConfig.mockHTTPPOSTResponses = true
+		return GenericPOST(urlString, payload, observer)
+	else 
+		GenericPOST(urlString, payload, observer)
+	end if
 
-	return resp
-End Function
+	return Invalid
+
+end function
 
 'Downloads and returns the User resources and campaign'
-Function GetUserResourcesAndCampaigns() as Object
-	swrveConfig = GetSwrveClientInstance().configuration
+function GetUserResourcesAndCampaigns(observer as String) as Object
+	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_RESOURCES_AND_CAMPAIGNS_URL
 	urlString = AddSwrveUrlParametersToURL(urlString)
@@ -80,20 +89,37 @@ Function GetUserResourcesAndCampaigns() as Object
 	if etag <> ""
 		urlString += "&etag=" + etag
 	end if
-	return GenericGET(urlString)
-End Function
+
+	if swrveConfig.mockHTTPGETResponses = true
+		rtn = GenericGET(urlString, "")
+		return rtn
+	else 
+		GenericGET(urlString, observer)
+	end if
+
+	return Invalid
+	
+end Function
 
 'Downloads the diff and returns the raw object'
-Function GetResourceDiff() as Object
-	swrveConfig = GetSwrveClientInstance().configuration
+function GetResourceDiff(observer as String) as Object
+	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_RESOURCES_DIFF_URL
 	urlString = AddSwrveUrlParametersToURL(urlString)
-	return GenericGET(urlString)
-End Function
+	
+	if swrveConfig.mockHTTPGETResponses = true
+		rtn = GenericGET(urlString, "")
+		return rtn
+	else 
+		GenericGET(urlString, observer)
+	end if
+
+	return Invalid
+end function
 
 'Transform the diff into the right struct with old/new pairs'
-Function SortResourceDiff(diff as Object) as object
+function SortResourceDiff(diff as Object) as object
 	flatStructure = {}
 	if diff.code < 400 and diff.data <> invalid
 		old = {}
@@ -121,14 +147,28 @@ Function SortResourceDiff(diff as Object) as object
 	return flatStructure
 end Function
 
-Function GetResourcesDiffSorted() as Object
-	rawDiff = GetResourceDiff()
-	sorted = SortResourceDiff(rawDiff)
+
+function SwrveGetResourcesDiff() as Object
+	rawDiff = GetResourceDiff("SwrveOnGetResourcesDiff")
+	return rawDiff
+end function
+
+function SwrveOnGetResourcesDiff(responseEvent as Dynamic) as Object
+	if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+		response = responseEvent.getData()
+		responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
+	else 
+		response = responseEvent
+	end if
+
+	sorted = SortResourceDiff(response)
+	m.global.SwrveResourcesDiffObjectReady = sorted
 	return sorted
-End Function
+end function
+
 
 'Loads from file user resources and campaigns'
-Function GetMockedUserResourcesAndCampaigns(filename) as Object
+function GetMockedUserResourcesAndCampaigns(filename) as Object
 	obj = SwrveGetObjectFromFile(SwrveConstants().SWRVE_JSON_LOCATION + filename) 
 	if obj <> invalid and type(obj) <> "roString"
 		mockedResponse = {
@@ -143,201 +183,131 @@ Function GetMockedUserResourcesAndCampaigns(filename) as Object
 		}
 		return mockedResponse
 	end if
-End Function
+end function
 
 'Will send some JSON payload to the batch endpoint
-Function SendBatchPOST(payload as Object) as Object
-	swrveConfig = GetSwrveClientInstance().configuration
+function SendBatchPOST(payload as Object, observer as Dynamic) as Object
+	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_API_ENDPOINT + SwrveConstants().SWRVE_BATCH_URL
-	return GenericPOST(urlString, payload)
-End Function
-
-' Generic POST function
-Function GenericPOST(url as String, data as Object) as Object
-	
-	swrveConfig = GetSwrveClientInstance().configuration
-
-	req = RequestObject()
-	' Set up URL
-	req.SetURL(url.Trim())
 
 	if swrveConfig.mockHTTPPOSTResponses = true
-		return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim()}
+		return GenericPOST(urlString, payload, observer)
+	else 
+		GenericPOST(urlString, payload, observer)
+	end if
+
+	return Invalid
+end function
+
+' Generic POST function
+function GenericPOST(url as String, data as Object, observer as Dynamic) as Object
+	swrveConfig = m.swrve_config
+
+	if swrveConfig.mockHTTPPOSTResponses = true
+		if(type(observer) = "String")
+			return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim()}
+		else 
+			return observer({ Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim()})
+		end if
 	end if
 
 	' make the data a json string
 	strData = FormatJson(data)
 
+	request = {
+		url:url.Trim(),
+		data:strData
+	}
 
-	SWLog("Sending POST to " + url)
-    requestSuccess = false
-	retries = swrveConfig.httpMaxRetries
-	retrySleepTime = swrveConfig.httpTimeBetweenRetries
-	while retries > 0 and requestSuccess = false
-		requestSuccess = req.AsyncPostFromString(strData)
-	    while true
-	      	msg = Wait (0, req.GetMessagePort())
-		    if type (msg) = "roUrlEvent"
-		        if msg.GetResponseCode() = 200
-		        	data = ""
-		        	if msg.GetString() <> "" and msg.GetString() <> invalid
-		        		data = ParseJSON(msg.GetString())
-		        	end if
-		         	return {
-		            	Code: msg.GetResponseCode()
-		            	Data: data
-		          	}
-		        else
-		         	return {
-		            	Code: msg.GetResponseCode()
-		            	Data: msg.GetFailureReason()
-		          	}
-		        endif
-		      	else if type (msg) = "Invalid"
-		        	res.AsyncCancel()
-		        	return invalid
-		      	endif
-	    end while
+	SWLog("GenericPOST() Sending POST to " + url)
 
-	    if requestSuccess = false and retries > 0 then
-			SWLog("Retrying in " + str(retrySleepTime) + " seconds...")
-	      	time.Sleep(time.Duration(retrySleepTime) * time.Second)
-	      	retrySleepTime = retrySleepTime * 2
-	      	retries--
-	    end if
-	end while
+	_postTask = CreateObject("roSGNode", "GenericPOSTTask")
+	_postTask.request = request
+	_postTask.ObserveField("response", observer)
+	_postTask.Control = "Run"
 
-	if requestSuccess = false
-		SWLog("Could not POST to "+ url)
-		return invalid
-	end if
-
-End Function
+	return {}
+end function
 
 
 
-Function GenericGET(url as String) as Object
-	swrveConfig = GetSwrveClientInstance().configuration
-
-	req = RequestObject()
-	req.SetURL(url.Trim())
+function GenericGET(url as String, observer as Dynamic) as Object
+	swrveConfig = m.swrve_config
 
 	if swrveConfig.mockHTTPGETResponses = true
-		return { Code: swrveConfig.mockedGETResponseCode, Data: {"user_resources" : {} }, requestUrl:url.Trim()}
+		return { Code: swrveConfig.mockedGETResponseCode, Data: {"user_resources" : {}, campaigns : {} }, requestUrl:url.Trim()}
 	end if
 
-	requestSuccess = false
+	request = {
+		url:url.Trim()
+	}
 
-	retries = swrveConfig.httpMaxRetries
-	retrySleepTime = swrveConfig.httpTimeBetweenRetries
-	while retries > 0 and requestSuccess = false
+	SWLog("GenericGET() to " + url)
 
-		requestSuccess = req.AsyncGetToString()
-	    while true
-	        msg = Wait (0, req.GetMessagePort())
-	        if type (msg) = "roUrlEvent"
-	        	if msg.GetResponseCode() = 200	
-	         		return {
-			           Code: msg.GetResponseCode()
-			           Data: ParseJSON(msg.GetString())
-			           Headers: msg.GetResponseHeaders()
-	          		}
-		        else
-		          	return {
-			           Code: msg.GetResponseCode()
-			           Data: msg.GetFailureReason()
-		          	}
-	            endif
-	      	else if type (msg) = "Invalid"
-		        res.AsyncCancel()
-		        return invalid
-	      	endif
-	    end while
+	_getTask = createObject("roSGNode", "GenericGETTask")
+	_getTask.request = request
+	_getTask.ObserveField("response", observer)
+	_getTask.Control = "Run"
+	m._getTask = _getTask
 
-	    if requestSuccess = false and retries > 0 then
-			SWLog("Retrying in " + str(retrySleepTime) + " seconds...")
-	      	Sleep(retrySleepTime * 1000)
-	      	retrySleepTime = retrySleepTime * 2
-	      	retries--
-	    end if
-	end while
-
-	if requestSuccess = false
-		SWLog("Failed GET request")
-		return invalid
-	end if
+	return Invalid
 end Function
 
 
-Function DownloadAndStoreAssets(swrveClient as Object, ids as Object, fo as function) as Object
-	allGood = true
+function DownloadAndStoreAssets(ids as Object) as Object
+	m._assetIds = []
+	
 	for each id in ids
-		response = DownloadAndStoreImage(swrveClient, id)
-		if response.code >= 400
-			allGood = false
-			EXIT FOR
-		end if
+		m._assetIds.Push(id)
 	end for
-	if allGood
-		fo()
+
+	for each id in ids
+		response = DownloadAndStoreImage(id)
+	end for
+end function
+
+function _SwrveOnDownloadAndStoreImage(responseEvent)
+	if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+		response = responseEvent.getData()
 	end if
-End Function
+	responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
 
-Function DownloadAndStoreImage(swrveClient as Object, id as String) as Object
-	filesystem = CreateObject("roFilesystem")
-	if not filesystem.Exists(SwrveConstants().SWRVE_ASSETS_LOCATION)
-    	filesystem.CreateDirectory(SwrveConstants().SWRVE_ASSETS_LOCATION)
-    end if
-	swrveConfig = GetSwrveClientInstance().configuration
+	if(m._assetIds.Count() > 0)
+		for id = 0 to m._assetIds.Count() - 1
+			if(m._assetIds[id] = response.id)
+				m._assetIds.Delete(id)
+				exit for
+			end if
+		end for
+	end if
 
-	cdn = swrveClient.userCampaigns.cdn_root
+	if(m._assetIds.Count() = 0)
+		assetsDownloadCallback()
+	end if
+end function
+
+function DownloadAndStoreImage(id as String) as Object
+	swrveConfig = m.swrve_config
+
+	cdn = m.userCampaigns.cdn_root
 
 	url = cdn + id
+	SWLog("Downloading " + url)
 	localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
 
-	req = RequestObject()
 
-	req.SetURL(url.Trim())
-	requestSuccess = false
+	request = {
+		id:id,
+		url:url.Trim(),
+		localUrl:localUrl,
+		assetLocation:SwrveConstants().SWRVE_ASSETS_LOCATION
+	}
 
-	retries = swrveConfig.httpMaxRetries
-	retrySleepTime = swrveConfig.httpTimeBetweenRetries
-	while retries > 0 and requestSuccess = false
-		requestSuccess = req.AsyncGetToFile(localUrl.Trim())
-	
-	    while true
-	        msg = Wait (0, req.GetMessagePort())
-	        if type (msg) = "roUrlEvent"
-	        	if msg.GetResponseCode() = 200	
-	         		return {
-			           Code: msg.GetResponseCode()
-			           Data: "Successful Download"
-	          		}
-		        else
-		          	return {
-			           Code: msg.GetResponseCode()
-			           Data: msg.GetFailureReason()
-		          	}
-	            endif
-	      	else if type (msg) = "Invalid"
-		        res.AsyncCancel()
-		        return invalid
-	      	endif
-	    end while
-
-	    if requestSuccess = false and retries > 0 then
-			SWLog("Retrying in " + str(retrySleepTime) + " seconds...")
-	      	Sleep(retrySleepTime * 1000)
-	      	retrySleepTime = retrySleepTime * 2
-	      	retries--
-	    end if
-	end while
-
-	if requestSuccess = false
-		SWLog("Failed GET request")
-		return invalid
-	end if
-End Function
+	_getTask = createObject("roSGNode", "DownloadAndStoreImageTask")
+	_getTask.request = request
+	_getTask.ObserveField("response", "_SwrveOnDownloadAndStoreImage")
+	_getTask.Control = "Run"
+end function
 
 

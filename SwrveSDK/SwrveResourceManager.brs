@@ -1,14 +1,14 @@
 'Structure that will provide the array of resources and a method for getting a specific resource'
-Function SwrveResourceManager(userResources as Object) as Object
+function SwrveResourceManager(userResources as Object) as Object
 	this = {}
 	this.userResources = userResources
 	this.SwrveResource = SwrveResource
 	return this
-End Function
+end function
 
 'Method for getting and constructing a Resource object. This resource object will have all the util functions
 'for getting attributes as types.
-Function SwrveResource(name as String) as Object
+function SwrveResource(name as String) as Object
 	for each resource in m.userResources
 		if resource.name = name
 			return SwrveResourceBuilder(resource)
@@ -16,32 +16,32 @@ Function SwrveResource(name as String) as Object
 		end if
 	end for
 	return {}
-End Function
+end function
 
 'Resource structure, with attributes and attribute getters'
-Function SwrveResourceBuilder(dict as Object) as Object
+function SwrveResourceBuilder(dict as Object) as Object
 	res = {}
 	res.append(dict)
 
-	res.AttributeAsString = AttributeAsString
-	res.AttributeAsInteger = AttributeAsInteger
-	res.AttributeAsFloat = AttributeAsFloat
-	res.AttributeAsBoolean = AttributeAsBoolean
-	res.AttributeAsColour = AttributeAsColour
+	res.SwrveAttributeAsString = SwrveAttributeAsString
+	res.SwrveAttributeAsInteger = SwrveAttributeAsInteger
+	res.SwrveAttributeAsFloat = SwrveAttributeAsFloat
+	res.SwrveAttributeAsBoolean = SwrveAttributeAsBoolean
+	res.SwrveAttributeAsColour = SwrveAttributeAsColour
 	return res
-End Function
+end function
 
 'attribute getters will actually be straightforward as all attribute will come down the json as string'
-Function AttributeAsString(name as String, default = "" as String) as String
+function SwrveAttributeAsString(name as String, default = "" as String) as String
 	attribute = box(m[name])
 	if attribute <> invalid
 		return attribute
 	else
 		return default
 	end if
-End Function
+end function
 
-Function AttributeAsInteger(name as String, default = 0 as Integer) as Integer
+function SwrveAttributeAsInteger(name as String, default = 0 as Integer) as Integer
 	attribute = box(m[name])
 	if attribute <> invalid
 		asInt = attribute.ToInt()
@@ -57,9 +57,9 @@ Function AttributeAsInteger(name as String, default = 0 as Integer) as Integer
 	else
 		return default
 	end if
-End Function
+end function
 
-Function AttributeAsBoolean(name as String, default = false as Boolean) as Boolean
+function SwrveAttributeAsBoolean(name as String, default = false as Boolean) as Boolean
 	attribute = box(m[name])
 	if attribute <> invalid
 		if attribute = "1" or LCase(attribute) = "true"
@@ -72,9 +72,9 @@ Function AttributeAsBoolean(name as String, default = false as Boolean) as Boole
 	else
 		return default
 	end if
-End Function
+end function
 
-Function AttributeAsFloat(name as String, default = 0.0 as Float) as Float
+function SwrveAttributeAsFloat(name as String, default = 0.0 as Float) as Float
 	attribute = box(m[name])
 	if attribute <> invalid
 		asFloat = attribute.ToFloat()
@@ -90,10 +90,10 @@ Function AttributeAsFloat(name as String, default = 0.0 as Float) as Float
 	else
 		return default
 	end if
-End Function
+end function
 
 'Colours in brightscript are 0xRRGGBBAA or 0xRRGGBB'
-Function AttributeAsColour(name as String, default = "0xFFFFFF" as String) as String
+function SwrveAttributeAsColour(name as String, default = "0xFFFFFF" as String) as String
 	attribute = box(m[name])
 	if attribute <> invalid
 		attribute = attribute.replace("#", "")
@@ -105,9 +105,9 @@ Function AttributeAsColour(name as String, default = "0xFFFFFF" as String) as St
 	else
 		return default
 	end if
-End Function
+end function
 
-Function LoadUserResourcesFromPersistence() as Object
+function SwrveLoadUserResourcesFromPersistence() as Object
 	resourceLocalSource = SwrveConstants().SWRVE_USER_RESOURCES_FILENAME
 	if SwrveIsResourceFileValid() 'checks that signature is still correct'
 		resourceString = SwrveGetStringFromPersistence(resourceLocalSource)
@@ -119,4 +119,4 @@ Function LoadUserResourcesFromPersistence() as Object
 		return {}
 	end if
 
-End Function
+end function

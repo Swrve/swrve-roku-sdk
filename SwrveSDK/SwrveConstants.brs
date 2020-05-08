@@ -1,8 +1,10 @@
-' SwrveConstants and URLs
+' Used in the main thread and in the Render thread. 
 function SwrveConstants() as Object
+
     userID = SwrveGetStringFromPersistence("userID", "")
+    
     return {
-        SWRVE_SDK_VERSION: "Roku 2.0.1"
+        SWRVE_SDK_VERSION: "Roku 3.0"
 
         SWRVE_INSTALL_DATE_KEY: "install_date"
         SWRVE_JOINED_DATE_KEY: userID + "install_date"

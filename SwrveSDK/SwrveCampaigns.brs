@@ -1,5 +1,5 @@
-Function GetGlobalDisplayRules(swrveClient as Object) as Object
-	globalDisplayRules = swrveClient.userCampaigns.rules
+function SwrveGetGlobalDisplayRules() as Object
+	globalDisplayRules = m.userCampaigns.rules
 	if globalDisplayRules = invalid
 		return {
 					delay_first_message: SwrveConstants().SWRVE_DEFAULT_DELAY_FIRST_MESSAGE
@@ -9,21 +9,21 @@ Function GetGlobalDisplayRules(swrveClient as Object) as Object
 	else
 		return globalDisplayRules
 	end if
-End Function
+end function
 
-Function GetDisplayRulesFromCampaignWithID(swrveClient as Object, id as Integer) as Object
-	for each campaign in swrveClient.userCampaigns.campaigns
+function SwrveGetDisplayRulesFromCampaignWithID(id as Integer) as Object
+	for each campaign in m.userCampaigns.campaigns
 		if campaign.id = id
-			return GetDisplayRulesFromCampaign(swrveClient, campaign)
+			return SwrveGetDisplayRulesFromCampaign(campaign)
 		end if
 	end for
-End Function
+end function
 
-Function GetDisplayRulesFromCampaign(swrveClient as Object, campaign as Object) as Object
+function SwrveGetDisplayRulesFromCampaign(campaign as Object) as Object
 	return campaign.rules
-End Function
+end function
 
-Function LoadUserCampaignsFromPersistence() as Object
+function SwrveLoadUserCampaignsFromPersistence() as Object
 	campaignLocalSource = SwrveConstants().SWRVE_USER_CAMPAIGNS_FILENAME
 	if SwrveIsCampaignFileValid() 'checks that signature is still correct'
 		campaignString = SwrveGetStringFromPersistence(campaignLocalSource)
@@ -35,36 +35,26 @@ Function LoadUserCampaignsFromPersistence() as Object
 		return {}
 	end if
 
-End Function
+end function
 
-Function CheckAssetsAllDownloaded(swrveClient as Object) as Boolean
-	ids = BuildArrayOfAssetIDs(swrveClient, swrveClient.userCampaigns)
-	for each id in ids
-		localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
-		filesystem = CreateObject("roFilesystem")
-		if not filesystem.Exists(localUrl)
-			return false
-	    end if
-	end for
-	return true
-End Function
+function SwrveCheckAssetsAllDownloaded(callback as String) as Boolean
+	'print "SwrveCompaigns().SwrveCheckAssetsAllDownloaded()"
+	ids = SwrveBuildArrayOfAssetIDs(m.userCampaigns)
+	ob = {
+		ids:ids,
+		assetLocation:SwrveConstants().SWRVE_ASSETS_LOCATION
+	}
+	_postTask = CreateObject("roSGNode", "CheckAssetsInFileSystemTask")
+	_postTask.request = ob
+	_postTask.ObserveField("response", callback)
+	_postTask.Control = "Run"
+end function
 
-Function CheckAssetsInCampaignsAreReady(campaigns as Object) as Boolean
-	ids = BuildArrayOfAssetIDs(swrveClient, {campaigns:campaigns})
-	for each id in ids
-		localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
-		filesystem = CreateObject("roFilesystem")
-		if not filesystem.Exists(localUrl)
-			return false
-	    end if
-	end for
-	return true
-End Function
 
-Function CheckAssetsInCampaignAreReady(campaign as Object) as Boolean
+function SwrveCheckAssetsInCampaignAreReady(campaign as Object) as Boolean
 	arrayOfCampaigns = []
 	arrayOfCampaigns.push(campaign)
-	ids = BuildArrayOfAssetIDs(swrveClient, {campaigns:arrayOfCampaigns})
+	ids = SwrveBuildArrayOfAssetIDs({campaigns:arrayOfCampaigns})
 	for each id in ids
 		localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
 		file = MatchFiles(SwrveConstants().SWRVE_ASSETS_LOCATION, id)
@@ -73,19 +63,16 @@ Function CheckAssetsInCampaignAreReady(campaign as Object) as Boolean
 		end if
 	end for
 	return true
-End Function
+end function
 
 
 
-Function BuildArrayOfComplyingCampaigns(swrveClient as Object, event as object) as object
+function SwrveBuildArrayOfComplyingCampaigns(event as object) as object
 	ids = []
-	if swrveClient = invalid
-		swrveClient = GetSwrveClientInstance()
-	end if
-	if swrveClient.userCampaigns.campaigns <> invalid and swrveClient.userCampaigns.campaigns.count() > 0
-		for each campaign in swrveClient.userCampaigns.campaigns
+	if m.userCampaigns.campaigns <> invalid and m.userCampaigns.campaigns.count() > 0
+		for each campaign in m.userCampaigns.campaigns
 		if campaign.messages <> invalid
-			if EventValidForCampaign(event, campaign)
+			if SwrveEventValidForCampaign(event, campaign)
 				ids.push(campaign)
 			end if
 		end if
@@ -95,8 +82,8 @@ Function BuildArrayOfComplyingCampaigns(swrveClient as Object, event as object) 
 End function
 
 
-Function CheckEventForTriggers(swrveClient as Object, event as object)
-	validCampaigns = BuildArrayOfComplyingCampaigns(swrveClient, event)
+function SwrveCheckEventForTriggers(event as object)
+	validCampaigns = SwrveBuildArrayOfComplyingCampaigns(event)
 
 	if validCampaigns.count() = 0
 		SWLog("No campaigns matched the event named "+ event.name)
@@ -105,71 +92,60 @@ Function CheckEventForTriggers(swrveClient as Object, event as object)
 		'check that assets have all been downloaded.'
 		campaignsReady = []
 		for each campaign in validCampaigns
-			if CheckAssetsInCampaignAreReady(campaign)
+			if SwrveCheckAssetsInCampaignAreReady(campaign)
 				campaignsReady.push(campaign)
 			end if
 		end for
 
 		if campaignsReady.count() > 0
 			SWLog("Assets are ready.")
-
-			sortedCampaigns = SortCampaignsByPriority(campaignsReady)
-
+			sortedCampaigns = SwrveSortCampaignsByPriority(campaignsReady)
 			for each campaign in sortedCampaigns
-				if CanShowCampaign(campaign)
-					if CanShowCampaignAccordingToGlobalRules(campaign)
+				_canShowCampaign = SwrveCanShowCampaign(campaign)
+				if _canShowCampaign
+					_canShowCampaignAccordingToGlobalRules = SwrveCanShowCampaignAccordingToGlobalRules(campaign)
+					if _canShowCampaignAccordingToGlobalRules
 						'Show message'
-						print "Campaign rules and Global display rules were OK. Show IAM"
-						processShowIAM(swrveClient, campaign)
+						'print "Campaign rules and Global display rules were OK. Show IAM"
+						SwrveProcessShowIAM(campaign)
 						EXIT FOR
 					end if
 				end if
 			end for
-
 		else
 			SWLog("Abort. Assets are not ready or missing.")
 		end if
-		'trigger & update local display rules'
-
 	end if
-End Function
+end function
 
-Function processShowIAM(swrveClient as Object, campaign as Object)
-
-	updateGlobalRules(swrveClient)
-	updateCampaignState(campaign)
-	messageToShow = priorityMessage(campaign)
-	swrveClient = GetSwrveClientInstance()
-        
-  swrveClient.SwrveReturnedMessageEvent(swrveClient, messageToShow)
-
-	swrveClient.SwrveForceFlush()
-
-	m.global = getGlobalAA().global
+function SwrveProcessShowIAM(campaign as Object)
+	messageToShow = SwrvePriorityMessage(campaign)
 
 	if m.global.swrveSDKHasCustomRenderer = true
 		m.global.messageWillRender = messageToShow
 	else
-		RenderIAM(messageToShow)
+		SwrveRenderIAM(messageToShow)
 	end if
-End Function
 
-Function RenderIAM(message as Object)
+	SwrveUpdateGlobalRules()
+	SwrveUpdateCampaignState(campaign)
+  	SwrveReturnedMessageEvent(messageToShow)
+	SwrveFlushAndClean()
+end function
+
+function SwrveRenderIAM(message as Object)
 	SWLog("Showing IAM - " + StrI(message.id)) 
 	m.global.swrveCurrentIAM = message
 	m.global.swrveShowIAM = true
-End Function
-
-Function updateGlobalRules(swrveClient as Object)
-
-	now = CreateObject("roDateTime")
-	SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_LASTMESSAGETIME, now.ToISOString())
-	swrveClient.numberOfMessagesShown = swrveClient.numberOfMessagesShown + 1
-	SynchroniseSwrveInstance(swrveClient)
-
 end function
 
-Function updateCampaignState(campaign as Object)
+function SwrveUpdateGlobalRules()
+	now = CreateObject("roDateTime")
+	SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_LASTMESSAGETIME, now.ToISOString())
+	m.numberOfMessagesShown = m.numberOfMessagesShown + 1
+end function
+
+function SwrveUpdateCampaignState(campaign as Object)
 	now = CreateObject("roDateTime")
 	SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_LASTMESSAGETIME + StrI(campaign.id), now.ToISOString())
 
@@ -181,16 +157,15 @@ Function updateCampaignState(campaign as Object)
 	impressions = impressions + 1
 
 	SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_IMPRESSIONS + StrI(campaign.id), StrI(impressions).trim())
-End Function
+end function
 
 
 'Checking if we can show the message according to global display rules'
-Function CanShowCampaignAccordingToGlobalRules(campaign as Object) as Boolean
+function SwrveCanShowCampaignAccordingToGlobalRules(campaign as Object) as Boolean
 
-	swrveClient = GetSwrveClientInstance()
 	now = CreateObject("roDateTime").AsSeconds()
 
-	globalRules = GetGlobalDisplayRules(swrveClient)
+	globalRules = SwrveGetGlobalDisplayRules()
 
 	delay_first_message = globalRules.delay_first_message
 	min_delay_between_messages = globalRules.min_delay_between_messages
@@ -201,9 +176,7 @@ Function CanShowCampaignAccordingToGlobalRules(campaign as Object) as Boolean
 	if min_delay_between_messages = invalid then min_delay_between_messages = SwrveConstants().SWRVE_DEFAULT_MIN_DELAY
 	if max_messages_per_session = invalid then max_messages_per_session = SwrveConstants().SWRVE_DEFAULT_MAX_SHOWS
 
-	sessionStart = swrveClient.GetSessionStartDateAsSeconds()
-
-	SWLog("{Campaign throttle limit} Too soon after launch.")
+	sessionStart = GetSessionStartDateAsSeconds()
 
 	'Checking if the globl rules state that the first message needs to be delayed, 
 	'and if we're too early or not to show the message.
@@ -213,13 +186,11 @@ Function CanShowCampaignAccordingToGlobalRules(campaign as Object) as Boolean
 		return false
 	end if
 
-	
 	'Checking that we don't go over the max number of impressions
-	if swrveClient.numberOfMessagesShown >= max_messages_per_session
+	if m.numberOfMessagesShown >= max_messages_per_session
 		SWLog("{Campaign throttle limit} Campaign has been shown too many times already")
 		return false
 	end if
-
 
     lastMessageTime = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_LASTMESSAGETIME, "")
     'Checking if delay between last message shown and now is greater than allowed delay'
@@ -238,24 +209,27 @@ Function CanShowCampaignAccordingToGlobalRules(campaign as Object) as Boolean
         	return true
         end if
 	end if
-	
-End Function
+end function
 
 
 'Checking if we can show the message according to the specific campaign rules'
-Function CanShowCampaign(campaign as Object) as Boolean
+function SwrveCanShowCampaign(campaign as Object) as Boolean
 	'check campaign rules
-	swrveClient = GetSwrveClientInstance()
 	now = CreateObject("roDateTime").AsSeconds()
 
 	delay_first_message = campaign.rules.delay_first_message
 	min_delay_between_messages = campaign.rules.min_delay_between_messages
 	max_impressions = campaign.rules.dismiss_after_views
-	sessionStart = swrveClient.GetSessionStartDateAsSeconds()
+	sessionStart = GetSessionStartDateAsSeconds()
 
 	'Checking if the campaign wants the first message to be delayed, and if we're too early to show the message.
 	if now - sessionStart < delay_first_message			
 		SWLog("{Campaign throttle limit} Too soon after launch.")
+		'print "{Campaign throttle limit} now:"; now
+		'print "{Campaign throttle limit} sessionStart:"; sessionStart
+		'print "{Campaign throttle limit} delay_first_message seconds:"; delay_first_message
+		'print "{Campaign throttle limit} (seconds) now - sessionStart = "; now - sessionStart
+		'print "{Campaign throttle limit} campaign.rules:"; campaign.rules
 		return false
 	end if
 
@@ -290,35 +264,34 @@ Function CanShowCampaign(campaign as Object) as Boolean
         	return true
         end if
 	end if
-End Function
+end function
 
 
-Function UpdateCampaignRulesData(campaign as Object)
-	swrveClient = GetSwrveClientInstance()
+function SwrveUpdateCampaignRulesData(campaign as Object)
 	date = CreateObject("roDateTime")
     SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_LASTMESSAGETIME + campaign.id, date.ToISOString())
-End Function
+end function
 
-Function SortCampaignsByPriority(campaigns as Object) as object
+function SwrveSortCampaignsByPriority(campaigns as Object) as object
 	if campaigns.Count() < 2
 		return campaigns
 	end if
 
 	for i = 0 to campaigns.Count()-2 step 1
-		campaignA = SWCopy(campaigns[i])
-		campaignB = SWCopy(campaigns[i+1])
+		campaignA = SwrveCopy(campaigns[i])
+		campaignB = SwrveCopy(campaigns[i+1])
 
-		if campaignPriority(campaignA) > campaignPriority(campaignB)
-			campaigns[i] = SWCopy(campaignB)
-			campaigns[i+1] = SWCopy(campaignA)
+		if SwrveCampaignPriority(campaignA) > SwrveCampaignPriority(campaignB)
+			campaigns[i] = SwrveCopy(campaignB)
+			campaigns[i+1] = SwrveCopy(campaignA)
 			i = -1
 		end if
 	end for
 
 	return campaigns
-End Function
+end function
 
-Function campaignPriority(campaign as Object) as Integer
+function SwrveCampaignPriority(campaign as Object) as Integer
 	lowest = 10000
 
 	for each message in campaign.messages
@@ -327,39 +300,39 @@ Function campaignPriority(campaign as Object) as Integer
 		end if
 	end for
 	return lowest
-End Function
+end function
 
-Function priorityMessage(campaign as Object) as object
+function SwrvePriorityMessage(campaign as Object) as object
 	if campaign.messages.count() < 2
 		return campaign.messages[0]
 	end if
 	for i = 0 to campaign.messages.Count()-2 step 1
-		messageA = SWCopy(campaign.messages[i])
-		messageB = SWCopy(campaign.messages[i+1])
+		messageA = SwrveCopy(campaign.messages[i])
+		messageB = SwrveCopy(campaign.messages[i+1])
 
 		if messageA.priority > messageB.priority
-			campaign.messages[i] = SWCopy(messageB)
-			campaign.messages[i+1] = SWCopy(messageA)
+			campaign.messages[i] = SwrveCopy(messageB)
+			campaign.messages[i+1] = SwrveCopy(messageA)
 			i = -1
 		end if
 	end for
 	return campaign.messages[0]
 end Function
 
-Function EventValidForCampaign(event as object, campaign as object) as Boolean
+function SwrveEventValidForCampaign(event as object, campaign as object) as Boolean
 	if campaign.triggers <> invalid
 		for each trigger in campaign.triggers 
-			if EventValidForTrigger(event, trigger)
+			if SwrveEventValidForTrigger(event, trigger)
 				return true 'Found a good trigger that matched!
 			end if
 		end for
 		return false 'none of the triggers were good for that event'
 	end if
 	return false
-End Function
+end function
 
 
-Function EventValidForTrigger(event as Object, trigger as Object) as Boolean
+function SwrveEventValidForTrigger(event as Object, trigger as Object) as Boolean
 	if event.name <> trigger.event_name
 		return false
 	else
@@ -374,23 +347,23 @@ Function EventValidForTrigger(event as Object, trigger as Object) as Boolean
 					return false
 				end if
 				for each condition in trigger.conditions 
-					isValid = EventValidForCondition(event, condition)
+					isValid = SwrveEventValidForCondition(event, condition)
 					if isValid = stopCriteria 
 						return stopCriteria
 					end if
 				end for
 				return not stopCriteria 'we got to the end without finding our stop criteria, return the opposite!'
 			else 'Only has one condition'
-				isValid = EventValidForCondition(event, trigger.conditions)
+				isValid = SwrveEventValidForCondition(event, trigger.conditions)
 				return isValid
 			end if
 		else ' Has no condition, just name based.'
 			return true
 		end if
 	end if
-End Function
+end function
 
-Function EventValidForCondition(event as Object, condition as Object) as Boolean
+function SwrveEventValidForCondition(event as Object, condition as Object) as Boolean
 	if condition = invalid 'problem here, return false'
 		return false
 	else if condition.keys().count() = 0 'Condition is empty array, so event complies with condition...'
@@ -410,13 +383,13 @@ Function EventValidForCondition(event as Object, condition as Object) as Boolean
 			end if
 		end if
 	end if
-End Function
+end function
 
-Function CampaignStateForCampaignID(id as integer) as Object
-	location = CampaignStateFilenameForCampaign(id)
+function SwrveCampaignStateForCampaignID(id as integer) as Object
+	location = SwrveCampaignStateFilenameForCampaign(id)
 	campaignState = SwrveGetObjectFromFile(location)
-End Function
+end function
 
-Function CampaignStateFilenameForCampaign(campaignID as String) as String
+function SwrveCampaignStateFilenameForCampaign(campaignID as String) as String
 	return SwrveConstants().SWRVE_CAMPAIGN_STATE_PREFIX + campaignID
-End Function
+end function

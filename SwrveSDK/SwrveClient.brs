@@ -1,139 +1,102 @@
 
 ' Swrve instance creator.'
-function Swrve(config as Object, port as Object) as Object
+function Swrve(config as Object)
+    SWLog( "SwrveClient()" )
+
+    swrveInit = SwrveGetTimestamp()
     di = CreateObject("roDeviceInfo")
     m.global = getGlobalAA().global
-    this = {
-        private: {
-            ' configuration items.'
-            config: {
-                version: "7" 
-                userId: SWObject(config.userId).default(GetDefaultUserID())
-                orientation: "Landscape"
-                httpMaxRetries: 3
-                httpTimeBetweenRetries: 2
-                stack: SWObject(config.stack).default("")
-                debug :  SWObject(config.debug).default(true)
-                sdkVersion: SwrveConstants().SWRVE_SDK_VERSION
-                autoDownloadCampaignsAndResources: true
-                newSessionInterval : SWObject(config.newSessionInterval).default(30)
-                appID: SWObject(config.appID).default("Unknown")
-                apiKey: SWObject(config.apiKey).default("Unknown")
-                deviceInfo: SWObject(config.deviceInfo).default({})
-                deviceToken: SWObject(config.deviceToken).default("Unknown")
-                uniqueDeviceID: checkOrWriteQADeviceID()
+    m.swrve_config = {
+                        version: "7" 
+                        userId: SWObject(config.userId).default(GetDefaultUserID())
+                        orientation: "Landscape"
+                        httpMaxRetries: 3
+                        httpTimeBetweenRetries: 2
+                        stack: SWObject(config.stack).default("")
+                        debug :  SWObject(config.debug).default(true)
+                        sdkVersion: SwrveConstants().SWRVE_SDK_VERSION
+                        autoDownloadCampaignsAndResources: true
+                        newSessionInterval : SWObject(config.newSessionInterval).default(30)
+                        appID: SWObject(config.appID).default("Unknown")
+                        apiKey: SWObject(config.apiKey).default("Unknown")
+                        deviceInfo: SWObject(config.deviceInfo).default({})
+                        deviceToken: SWObject(config.deviceToken).default("Unknown")
+                        uniqueDeviceID: checkOrWriteQADeviceID()
 
-                queueMaxSize: SWObject(config.queueMaxSize).default(1000)
-                flushingDelay:  SWObject(config.flushingDelay).default(10)
-                campaignsAndResourcesDelay:  SWObject(config.campaignsAndResourcesDelay).default(60)
+                        queueMaxSize: SWObject(config.queueMaxSize).default(1000)
+                        flushingDelay:  SWObject(config.flushingDelay).default(1)
+                        campaignsAndResourcesDelay:  SWObject(config.campaignsAndResourcesDelay).default(60)
 
-                mockHTTPPOSTResponses: SWObject(config.mockHTTPPOSTResponses).default(false)
-                mockedPOSTResponseCode: SWObject(config.mockedPOSTResponseCode).default(200)
-                mockHTTPGETResponses: SWObject(config.mockHTTPGETResponses).default(false)
-                mockedGETResponseCode: SWObject(config.mockedGETResponseCode).default(200)
-                session_token : ""
-                isQAUser: false
-                stopped: false
-                identifiedOnAnotherDevice: SWObject(config.identifiedOnAnotherDevice).default(false)
-            }
-            installDate: CreateObject("roDateTime")
-            joinedDate: CreateObject("roDateTime")
-            lastSession: CreateObject("roDateTime")
-        }
+                        mockHTTPPOSTResponses: SWObject(config.mockHTTPPOSTResponses).default(false)
+                        mockedPOSTResponseCode: SWObject(config.mockedPOSTResponseCode).default(200)
+                        mockHTTPGETResponses: SWObject(config.mockHTTPGETResponses).default(false)
+                        mockedGETResponseCode: SWObject(config.mockedGETResponseCode).default(200)
+                        session_token : ""
+                        isQAUser: false
+                        stopped: false
+                        identifiedOnAnotherDevice: SWObject(config.identifiedOnAnotherDevice).default(false)
+                    }
 
-        eventsQueue: []
+    dateTimeObjects = SwrveGetTimestamp()
+    m.installDate = CreateObject("roDateTime")
+    m.joinedDate = CreateObject("roDateTime")
 
-        userResources: []
-        userCampaigns: {}
+    m.eventsQueue = []
+    'm.swrveNextFlush = CreateObject("roDateTime").AsSeconds() 
 
-        numberOfMessagesShown : 0
-        startSessionAsSeconds : CreateObject("roDateTime").AsSeconds()
-        swrveNextFlush : CreateObject("roDateTime").AsSeconds()+1 'Set it as +1 to flush on startup after 1 sec'
-        swrveNextUpdateCampaignsAndResources : CreateObject("roDateTime").AsSeconds()+1 'Set it as +1 to flush on startup after 1 sec'
+    m.userResources = []
+    m.userCampaigns = {}
 
-        'Methods'
-        swrveListener: SwrveListener
-        SwrveEvent: SwrveEvent
-        SwrveFlushQueue: SwrveFlushQueue
-        PostQueueAndFlush: PostQueueAndFlush
-        SwrveForceFlush: SwrveForceFlush
-        SwrveUserUpdate: SwrveUserUpdate
-        SwrveDeviceUpdate: SwrveDeviceUpdate
-        SwrveIdentify : SwrveIdentify
-        SwrveIdentifyWithUserID : SwrveIdentifyWithUserID
-        SwrvePurchaseEvent: SwrvePurchaseEvent
-        SwrveCurrencyGiven: SwrveCurrencyGiven
-        SwrveUserUpdateWithDate: SwrveUserUpdateWithDate
-        SwrveIAPWithoutReceipt: SwrveIAPWithoutReceipt
-        SwrveProduct: SwrveProduct
-        SwrveReward: SwrveReward
-        GetSessionStartDateAsReadable: GetSessionStartDateAsReadable
-        SwrveShutdown: SwrveShutdown
-        SwrveSessionStart: SwrveSessionStart
-        SwrveFirstSession: SwrveFirstSession
-        SwrveStop: SwrveStop
-        SwrveResume: SwrveStop
-        SwrveGetUserResourcesDiff: SwrveGetUserResourcesDiff
-        GetSessionStartDateAsSeconds: GetSessionStartDateAsSeconds
-        setCustomCallback: setCustomCallback
-        setNewResourcesCallback: setNewResourcesCallback
-        setNewResourcesDiffCallback: setNewResourcesDiffCallback
-        setCustomMessageRender: setCustomMessageRender
-        SwrveClickEvent: SwrveClickEvent
-        SwrveImpressionEvent: SwrveImpressionEvent
-        SwrveReturnedMessageEvent: SwrveReturnedMessageEvent
+    m.resourceManager = Invalid
 
-    }
+    m.numberOfMessagesShown = 0
+    m.startSessionAsSeconds = CreateObject("roDateTime").AsSeconds()
+    m.swrveNextUpdateCampaignsAndResources = CreateObject("roDateTime").AsSeconds()
 
-    this.private.config.uniqueDeviceID = checkOrWriteQADeviceID()
+    'Development: Benchmarking
+    SwrvePrintLoadingTimeFromTimestamp("Swrve() init dateTimeObjects", dateTimeObjects)
 
-    SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_ID_KEY, this.private.config.userID)
-    ' Generate Token
+    m.swrve_config.uniqueDeviceID = checkOrWriteQADeviceID()
 
-    this.configuration = SWObject(this.private.config).copy(1)
+    SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_ID_KEY, m.swrve_config.userID)
 
-    ' Set the config as an accessible object'
+    'Development: Benchmarking
+    globalObjects = SwrveGetTimestamp()
 
-    'm.global is a global node accessible from anywhere in the app.'
-    m.global.AddFields( {"swrve": this})
-
-    'This will be used as an observed value to show IAMs from anywhere in the app'
-    m.global.AddField("swrveShowIAM", "boolean", true)
-    m.global.setField("swrveShowIAM", false)
-
-    'This will be used as an observed value to show IAMs from anywhere in the app'
-    m.global.AddField("swrveCurrentIAM", "assocarray", true)
-    m.global.setField("swrveCurrentIAM", false)
-
-
-    'This will be used as an observed value for users to get the resources Diff'
-    m.global.AddFields( {"swrveResourcesDiff": false })
-    m.global.observeField("swrveResourcesDiff", port)
-
-    'This value can be observed and will be notified everytime we get a new campaign/resources file'
-    m.global.AddField("swrveResourcesAndCampaigns", "boolean", true)
-    m.global.setField("swrveResourcesAndCampaigns", false)
-
-    'This value can be observed and will be notified when the diff is ready
-    m.global.AddField("swrveResourcesDiffObjectReady", "assocarray", true)
-    m.global.setField("swrveResourcesDiffObjectReady", {})
-
-    'This value can be observed and will be notified when the assets have been downloaded
-    m.global.AddField("swrveAssetsReady", "boolean", true)
+    
+    m.global.setField("SwrveDebug", m.swrve_config.debug)
+    m.global.setField("SwrveIsQAUser", m.swrve_config.isQAUser)
+    m.global.observeField("swrveShowIAM", "onShowSwrveIAM")
+    m.global.setField("swrveCurrentIAM", {})
+    m.global.observeField("SwrveShutdown", "SwrveShutdown")
     m.global.setField("swrveAssetsReady", false)
-
-    'This will be observed in case we need to force flush the events. It means that notifying from a component can be done from any thread'
-    'But receiving the notification and acting on it will be done on the main thread, which is safe.'
-    m.global.AddFields( {"forceFlush": false })
-    m.global.observeField("forceFlush", port)
-
-     'This value will be used to notify the custom callback for rendering messages
-    m.global.AddField("messageWillRender", "assocarray", true)
-    m.global.setField("messageWillRender", {})
-
-    m.global.AddField("swrveSDKHasCustomRenderer", "boolean", true)
+    m.global.observeField("SwrveEvent", "onSwrveGlobalEvent")
+    m.global.observeField("SwrveClickEvent", "onSwrveClickEvent")
+    m.global.observeField("SwrvePurchaseEvent", "onSwrvePurchaseEvent")
+    m.global.observeField("SwrveUserUpdate", "onSwrveUserUpdate")
+    m.global.observeField("SwrveImpressionEvent", "SwrveOnImpressionEvent")
     m.global.setField("swrveSDKHasCustomRenderer", false)
 
+    m.global.observeField("SwrveGetNewResourcesDiff", "SwrveGetResourcesDiff")
+    m.global.observeField("SwrveGlobalCurrencyGiven", "SwrveGlobalCurrencyGiven")
+    m.global.observeField("SwrveGlobalUserUpdateWithDate", "SwrveGlobalUserUpdateWithDate")
+    m.global.observeField("SwrveGlobalIAPWithoutReceipt", "SwrveGlobalIAPWithoutReceipt")
+    m.global.observeField("SwrveGlobalFlushAndClean", "SwrveFlushAndClean")
+
+    'Development: Benchmarking
+    SwrvePrintLoadingTimeFromTimestamp("Swrve() init globalObjects", globalObjects)
+
+    
+    m.global.observeField("SwrveGlobalIdentifyExternalID", "SwrveGlobalIdentify")
+
+    SwrveStartSession()
+
+    'Development: Benchmarking
+    SwrvePrintLoadingTimeFromTimestamp("Swrve() init swrveInit", swrveInit)
+
+end function
+
+function SwrveStartSession()
     ' True if there is no joined date for this user, meaning it is the first ever session for this user'
     firstSession = SwrveFirstEverSession()
 
@@ -148,194 +111,303 @@ function Swrve(config as Object, port as Object) as Object
         startTimestamp = GetSessionStartDate()
     end if
 
-    this.configuration.session_token = generateToken(startTimestamp, this.private.config.userId, this.private.config.apikey, this.private.config.appId)
+    m.swrve_config.session_token = SwrveGenerateToken(startTimestamp, m.swrve_config.userId, m.swrve_config.apikey, m.swrve_config.appId)
 
-    this.private.addreplace("installDate", checkOrWriteInstallDate())
-    this.private.addreplace("joinedDate", checkOrWriteJoinedDate())
+    m.installDate = checkOrWriteInstallDate()
+    m.joinedDate = checkOrWriteJoinedDate()
 
-    this.private.addreplace("lastSession", updateLastSessionDate())
-    this.private.addreplace("startSession", GetSessionStartDate())
+    updateLastSessionDate()
+    m.startSession = GetSessionStartDate()
 
     'Load campaigns, resources and qa dicts from persistence as they might not come down the feed (etag)'
-    this.userCampaigns = LoadUserCampaignsFromPersistence()
-    this.userResources = LoadUserResourcesFromPersistence()
+    m.userCampaigns = SwrveLoadUserCampaignsFromPersistence()
+    m.global.userCampaigns = m.userCampaigns
+    'TODO BRIGHTSCRIPT: ERROR: roSGNode.AddReplace: "userresources": Type mismatch: pkg:/source/SwrveSDK/SwrveClient.brs(123)'
+    m.userResources = SwrveLoadUserResourcesFromPersistence()
+    m.global.userResources = m.userResources
     
-    if this.userCampaigns.cdn_paths <> invalid
-        this.userCampaigns.cdn_root = this.userCampaigns.cdn_paths.message_images
+    if m.userCampaigns.cdn_paths <> invalid
+        m.userCampaigns.cdn_root = m.userCampaigns.cdn_paths.message_images
     end if
   
     qa = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_QA_FILENAME, "")    
     if qa <> ""
-        this.qa = ParseJSON(qa)
-        this.private.config.isQAUser = true
+        m.SwrveQA = ParseJSON(qa)
+        m.swrve_config.isQAUser = true
+        m.global.SwrveIsQAUser = true
     end if
-    SynchroniseSwrveInstance(this)
+
     if shouldSendSessionStart
         SWLog("Session started, send session_start.")
-        'TODO Reset campaign states & global impression states'
         SwrveClearKeyFromPersistence(SwrveConstants().SWRVE_ETAG_FILENAME)    
-        SwrveSessionStart(this)
-        SwrveDeviceUpdate(this, userInfosDictionary())
+        SwrveSessionStart()
+        SwrveDeviceUpdate(SwrveUserInfosDictionary())
     else
         SWLog("Session continued, keep the session alive")
     end if
 
-    if firstSession and this.private.config.identifiedOnAnotherDevice = false
+    if firstSession and m.swrve_config.identifiedOnAnotherDevice = false
          SWLog("It is the first session ever and the user hasn't identified on another device. Send a first_session event")
-         SwrveFirstSession(this)
+         SwrveFirstSession()
     end if
-  
-    return this
 end function
 
-function SwrveGetUserResourcesDiff(swrveClient as Object) 
-    m.global = getGlobalAA().global
-    m.global.swrveResourcesDiff = true 'Triggers the call so that it originates from the listener on main thread'
-end Function
-
-
-' This will put the current instance into this. Because brightscript clears the functions and methods,
-' we need to copy them again into the right pointers to functions in order to use them from anywhere in the app
-function GetSwrveClientInstance() as Object
-    this = m.global.swrve
-    if this = invalid
-        return invalid
-    end if
-    'Copy all the public methods'
-    this.swrveListener = SwrveListener
-    this.SwrveEvent = SwrveEvent
-    this.SwrveFlushQueue = SwrveFlushQueue
-    this.PostQueueAndFlush = PostQueueAndFlush
-    this.SwrveForceFlush = SwrveForceFlush
-    this.SwrveUserUpdate = SwrveUserUpdate
-    this.SwrveDeviceUpdate = SwrveDeviceUpdate
-    this.SwrvePurchaseEvent = SwrvePurchaseEvent
-    this.SwrveCurrencyGiven = SwrveCurrencyGiven
-    this.SwrveUserUpdateWithDate = SwrveUserUpdateWithDate
-    this.SwrveIAPWithoutReceipt = SwrveIAPWithoutReceipt
-    this.SwrveProduct = SwrveProduct
-    this.SwrveReward = SwrveReward
-    this.GetSessionStartDateAsReadable = GetSessionStartDateAsReadable
-    this.SwrveShutdown = SwrveShutdown
-    this.SwrveSessionStart = SwrveSessionStart
-    this.SwrveFirstSession = SwrveFirstSession
-    this.GetCurrentUserID = GetCurrentUserID
-    this.SwrveStop = SwrveStop
-    this.SwrveResume = SwrveResume
-    this.SwrveGetUserResourcesDiff = SwrveGetUserResourcesDiff
-    this.resourceManager = SwrveResourceManager(this.userResources)
-    this.GetSessionStartDateAsSeconds = GetSessionStartDateAsSeconds
-    this.setCustomCallback = setCustomCallback
-    this.setNewResourcesCallback = setNewResourcesCallback
-    this.setNewResourcesDiffCallback = setNewResourcesDiffCallback
-    this.SwrveClickEvent = SwrveClickEvent
-    this.SwrveImpressionEvent = SwrveImpressionEvent
-    this.SwrveReturnedMessageEvent = SwrveReturnedMessageEvent
-    this.setCustomMessageRender = setCustomMessageRender
-    this.SwrveIdentify = SwrveIdentify
-    this.SwrveIdentifyWithUserID = SwrveIdentifyWithUserID
-
-    return this
-End function
-
-' the instance was only a copy, Sync it back to global
-function SynchroniseSwrveInstance(instance as Object)
-    m.global.swrve = instance
+function SwrveGlobalCurrencyGiven(msg)
+    msgObj = msg.getData()
+    SwrveCurrencyGiven(msgObj.givenCurrency, msgObj.givenAmount)
 end function
 
-Function GetStack(config as Object) as String
+function SwrveGlobalUserUpdateWithDate(msg)
+    msgObj = msg.getData()
+    SwrveUserUpdateWithDate(msgObj.name, msgObj.date)
+end function
+
+function SwrveGlobalIAPWithoutReceipt(msg)
+    msgObj = msg.getData()
+    'no roku store, needs to be unknown for backend
+    SwrveIAPWithoutReceipt(msgObj.product, msgObj.rewards, msgObj.currency, "unknown")
+end function
+
+
+
+
+
+function SwrveGlobalIdentify(msg) 
+    print "SwrveGlobalIdentify() msg:"; msg
+    SwrveIdentify(msg.getData()) 
+end function
+
+function SwrveStartHeartbeat()
+    delayTimer = m.top.findNode("refreshTimer")
+    delayTimer.duration = 5
+    delayTimer.ObserveField("fire","SwrveOnTimer")
+    delayTimer.Control = "start"
+    m.delayTimer = delayTimer
+
+    SwrveOnTimer()
+end function
+
+function SwrveOnImpressionEvent(payload)
+    if(payload <> Invalid AND type(payload) = "roSGNodeEvent")
+        eventOb = payload.getData()
+        if(eventOb <> Invalid)
+            SwrveImpressionEvent(eventOb)   
+        else 
+            SWLog("m.global.SwrveImpressionEvent data is invalid")
+        end if
+    end if
+    
+end function
+
+function onSwrveUserUpdate(payload)
+    if(payload <> Invalid AND type(payload) = "roSGNodeEvent")
+        eventOb = payload.getData()
+        if(eventOb <> Invalid)
+            SwrveUserUpdate(eventOb)  
+        else 
+            SWLog("m.global.SwrveUserUpdate data is invalid")
+        end if
+    end if
+end function
+
+function onSwrvePurchaseEvent(payload)
+    if(payload <> Invalid AND type(payload) = "roSGNodeEvent")
+        eventOb = payload.getData()
+        if(eventOb.itemQuantity <> Invalid AND eventOb.itemName <> Invalid AND eventOb.itemPrice <> Invalid AND eventOb.itemCurrency <> Invalid)
+            SwrvePurchaseEvent(eventOb.itemQuantity, eventOb.itemName, eventOb.itemPrice, eventOb.itemCurrency)  
+        else 
+            SWLog("m.global.SwrvePurchaseEvent itemQuantity, itemName, itemPrice or itemCurrency is invalid")
+        end if
+    end if
+end function
+
+function onSwrveClickEvent(payload)
+    if(payload <> Invalid AND type(payload) = "roSGNodeEvent")
+        eventOb = payload.getData()
+        if(eventOb.eventName <> Invalid AND eventOb.buttonname <> Invalid)
+            SwrveClickEvent(eventOb.eventName, eventOb.buttonname)
+        else 
+            SWLog("m.global.SwrveClickEvent eventName or buttonname is invalid")
+        end if
+    end if
+end function
+
+function onSwrveGlobalEvent(payload)
+    if(payload <> Invalid AND type(payload) = "roSGNodeEvent")
+        eventOb = payload.getData()
+        if(eventOb <> Invalid)
+            eventName = ""
+            payload = Invalid
+            
+            if(eventOb.eventName <> Invalid)
+                eventName = eventOb.eventName
+            end if
+
+            if(eventOb.payload <> Invalid)
+                payload = eventOb.payload
+            end if
+
+            if(eventName <> "" AND payload = Invalid)
+                SwrveEvent(eventName)
+            else if (eventName <> "" AND payload <> Invalid)
+                SwrveEvent(eventName, payload)
+            else 
+                SWLog("m.global.SwrveEvent eventName = \"\"")
+            end if
+        else 
+            SWLog("m.global.SwrveEvent getData() returns Invalid")
+        end if
+    else 
+        SWLog("m.global.SwrveEvent assigned as Invalid or is not of type roSGNodeEvent")
+    end if
+end function
+
+function SwrveGetConfig()
+    return m.swrve_config
+end function
+
+function onShowSwrveIAM()  
+    showMessage = m.global.swrveShowIAM
+    if NOT showMessage
+        RemoveIAMInClient() 
+    else if showMessage = true
+        ShowIAMInClient()    
+    end if
+end function
+
+
+function GetStack(config as Object) as String
     if config.DoesExist("stack") and config.stack = "eu"
         return "eu-"
     else 
         return ""
     end if
-End Function
+end function
 
-' Do not call from the render thread'
-Function SwrveIdentify(swrveClient as Object, externalID as String) as object
-    print "[SwrveSDK] SwrveIdentify - " + externalID
+function SwrveIdentify(externalID as String) as object
 
-    cfg = swrveClient.configuration
-    cfg.identifiedOnAnotherDevice = false
+    SWLog("SwrveIdentify() externalID:" + externalID)
+
+    if(m.swrve_config = Invalid) return Invalid
+
+    m.swrve_config.identifiedOnAnotherDevice = false
     
-    flushAndClean(swrveClient)
-    SwrveStop(swrveClient)
+    SwrveFlushAndClean()
+    SwrveStop()
     shouldIdentify = false
     m.dictionaryOfSwrveIDS = SwrveGetObjectFromPersistence(SwrveConstants().SWRVE_USER_IDS_KEY, invalid)
     
 
     ' Special case : Identify used wil nil or "" '
     if externalID = ""
-        print "Anonymous identify"
+        SWLog( "SwrveIdentify() Anonymous identify" )
         di = CreateObject("roDeviceInfo")
         udid = di.GetRandomUUID()
-        cfg.userID = udid
-        port = CreateObject("roMessagePort")
-        swrveClient = Swrve(cfg, port)   
-        SwrveResume(swrveClient)
-        SynchroniseSwrveInstance(swrveClient)     
+        m.swrve_config.userID = udid
+
+        SwrveResume()    
         return {
             status : "Anonymous restart"
             swrve_id : udid
         }            
     end if
 
-
     if m.dictionaryOfSwrveIDS = invalid
         m.dictionaryOfSwrveIDS = {}
         shouldIdentify = true
     else 
         if m.dictionaryOfSwrveIDS[externalID] <> invalid
-            port = CreateObject("roMessagePort")
-            cfg.userID = m.dictionaryOfSwrveIDS[externalID]
-            swrveClient = Swrve(cfg, port)
+            m.swrve_config.userID = m.dictionaryOfSwrveIDS[externalID]
         else
             shouldIdentify = true
         end if
     end if
 
     res = {}
-    res.swrve_id = swrveClient.configuration.userID
+    res.swrve_id = m.swrve_config.userID
     if shouldIdentify
-        response = Identify(externalID)
-        if response.code = 403
-            di = CreateObject("roDeviceInfo")
-            udid = di.GetRandomUUID()
-            response = IdentifyWithUserID(udid, externalID)
-        end if
-
-        if response.code < 400
-            res.swrve_id = response.data.swrve_id
-            m.dictionaryOfSwrveIDs[externalID] = response.data.swrve_id
-
-            if cfg.userID <> response.data.swrve_id
-                cfg.userID = response.data.swrve_id
-                cfg.identifiedOnAnotherDevice = true
-                port = CreateObject("roMessagePort")
-        
-                swrveClient = Swrve(cfg, port)
-            end if
-            res.status = response.data.status
-        else
-            res.status = response.data
-        end if        
+        response = Identify(externalID, "onIdentifyCallback")
+        return {}
     end if
     
+    onSwrveIdentifyComplete(res)
+    
+end function
+
+function onIdentifyCallback(responseEvent) as Object
+    if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+        response = responseEvent.getData()
+    else 
+        return {}
+    end if
+
+    requestObj = Invalid
+    requestStr = response.RequestStr
+    externalID = ""
+    if(response.requeststr <> Invalid) requestObj = ParseJSON(response.requeststr)
+    if(requestObj.external_user_id <> Invalid) externalID = requestObj.external_user_id
+
+
+    if response.code = 403
+        di = CreateObject("roDeviceInfo")
+        udid = di.GetRandomUUID()
+        response = IdentifyWithUserID(udid, externalID, "onIdentifyWithUserID")
+        return {}
+    end if
+
+    return onIdentifyWithUserID(responseEvent)
+    
+end function
+
+function onIdentifyWithUserID(responseEvent)
+    if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+        response = responseEvent.getData()
+    else 
+        return {}
+    end if
+
+    requestObj = Invalid
+    requestStr = response.RequestStr
+    externalID = ""
+    if(response.requeststr <> Invalid) requestObj = ParseJSON(response.requeststr)
+    if(requestObj.external_user_id <> Invalid) externalID = requestObj.external_user_id
+
+    res = {}
+
+    if response.code < 400
+        res.swrve_id = response.data.swrve_id
+        m.dictionaryOfSwrveIDs[externalID] = response.data.swrve_id
+
+        if m.swrve_config.userID <> response.data.swrve_id
+            m.swrve_config.userID = response.data.swrve_id
+            m.swrve_config.identifiedOnAnotherDevice = true
+        end if
+        res.status = response.data.status
+    else
+        res.status = response.data
+    end if        
+    
+    return onSwrveIdentifyComplete(res)
+end function
+
+function onSwrveIdentifyComplete(res)
+    m.swrve_config.userId = res.swrve_id
+    SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_ID_KEY, res.swrve_id)
     SwrveSaveObjectToPersistence(SwrveConstants().SWRVE_USER_IDS_KEY, m.dictionaryOfSwrveIDs)
-
-    SwrveResume(swrveClient)
-    SynchroniseSwrveInstance(swrveClient)
-
+    SwrveStartSession() 'Restart the session for the new user'
+    m.global.SwrveGlobalIdentifyExternalIDCallback = res
+    SwrveResume()
     return res
-End Function
+end function
 
-Function SwrveIdentifyMocked(swrveClient as Object, externalID as Object, mockedResponse as String) as object
 
-    cfg = swrveClient.configuration
-    cfg.identifiedOnAnotherDevice = false
 
-    flushAndClean(swrveClient)
-    SwrveStop(swrveClient)
+function SwrveIdentifyMocked(externalID as Object, mockedResponse as String) as object
+
+    m.swrve_config.identifiedOnAnotherDevice = false
+
+    SwrveFlushAndClean()
+    SwrveStop()
     shouldIdentify = false
     m.dictionaryOfSwrveIDS = SwrveGetObjectFromPersistence(SwrveConstants().SWRVE_USER_IDS_KEY, invalid)
     if m.dictionaryOfSwrveIDS = invalid
@@ -343,10 +415,7 @@ Function SwrveIdentifyMocked(swrveClient as Object, externalID as Object, mocked
         shouldIdentify = true
     else 
         if m.dictionaryOfSwrveIDS[externalID] <> invalid
-            port = CreateObject("roMessagePort")
-            cfg = swrveClient.configuration
-            cfg.userID = m.dictionaryOfSwrveIDS[externalID]
-            swrveClient = Swrve(cfg, port)
+            m.swrve_config.userID = m.dictionaryOfSwrveIDS[externalID]
         else
             shouldIdentify = true
         end if
@@ -366,13 +435,9 @@ Function SwrveIdentifyMocked(swrveClient as Object, externalID as Object, mocked
             res.swrve_id = response.data.swrve_id
             m.dictionaryOfSwrveIDs[externalID] = response.data.swrve_id
 
-            if cfg.userID <> response.data.swrve_id
-                cfg.userID = response.data.swrve_id
-                cfg.identifiedOnAnotherDevice = true
-
-                port = CreateObject("roMessagePort")
-        
-                swrveClient = Swrve(cfg, port)
+            if m.swrve_config.userID <> response.data.swrve_id
+                m.swrve_config.userID = response.data.swrve_id
+                m.swrve_config.identifiedOnAnotherDevice = true
             end if
             res.status = response.data.status
         else
@@ -381,40 +446,35 @@ Function SwrveIdentifyMocked(swrveClient as Object, externalID as Object, mocked
     end if
     
     SwrveSaveObjectToPersistence(SwrveConstants().SWRVE_USER_IDS_KEY, m.dictionaryOfSwrveIDs)
-
-    SwrveResume(swrveClient)
-    SynchroniseSwrveInstance(swrveClient)
-
+    SwrveResume()
     return res
+
 end function
 
-Function SwrveIdentifyWithUserID(swrveClient as Object, userID as String, externalID as Object) as object
-    print "[SwrveSDK] SwrveIdentifyWithUserID - " + userID + " - " externalID
+function SwrveIdentifyWithUserID(userID as String, externalID as Object) as object
     return IdentifyWithUserID(userID, externalID)
-End Function
+end function
 
 
-Function SwrveStop(swrveClient as Object)
-    'SaveQueueToPersistence(swrveClient)
-    swrveClient.configuration.stopped = true
-    SynchroniseSwrveInstance(swrveClient)
-End Function
+function SwrveStop()
+    m.swrve_config.stopped = true
+    if m.delayTimer <> Invalid then m.delayTimer.control = "stop"
+end function
 
-Function SwrveResume(swrveClient as Object)
-    swrveClient.configuration.stopped = false
-    SynchroniseSwrveInstance(swrveClient)
-End Function
+function SwrveResume()
+    m.swrve_config.stopped = false
+    if m.delayTimer <> Invalid then m.delayTimer.control = "start"
+end function
 
-Function SwrveShutdown()
+function SwrveShutdown() as Object
+    if(m.delayTimer <> Invalid)
+        m.delayTimer.control = "stop"
+        m.delayTimer = Invalid
+    end if
+
     m.global = getGlobalAA().global
-    m.global.swrveResourcesAndCampaigns = false
     SWLog("Shutdown initiated.")
     SWLog("Shutdown initiated....Flushing queue")
-
-    swrveClient = GetSwrveClientInstance()
-    'Save queue to persistant storage. It will be sent to the backend the enxt time that user starts a session'
-    'SaveQueueToPersistence(swrveClient)
-    'Not needed anymore as every event is now going to persistence straight away'
 
     SWLog("Shutdown initiated....clearing persistent storage")
     SwrveClearKeyFromPersistence(SwrveConstants().SWRVE_LAST_SESSION_DATE_KEY)
@@ -425,87 +485,129 @@ Function SwrveShutdown()
     SwrveClearKeyFromPersistence(SwrveConstants().SWRVE_ETAG_FILENAME)
 
     SWLog("Shutdown initiated....Clearing memory")
+    SWLog("Shutdown. To use Swrve features you will need to reinitiate.")
 
-    SWLog("Shutdown. To use Swrve features you will need to create a new instance.")
+    m.startSession = Invalid
+    m.userCampaigns = Invalid
+    m.userResources = Invalid
+    m.installDate = Invalid
+    m.joinedDate = Invalid
+    m.eventsQueue = Invalid
+    'm.swrveNextFlush = Invalid
+    m.numberOfMessagesShown = Invalid
+    m.startSessionAsSeconds = Invalid
+    m.swrveNextUpdateCampaignsAndResources = Invalid
 
-    m.global.swrve = invalid
-    swrveClient = invalid
-    m.global.Delete("swrve")
-End Function
+    m.global.SwrveDebug = Invalid
+    m.swrve_config = Invalid
 
-' Has to be called by the use in the main while true loop in the Main file, to handle events and messages
-function SwrveListener(swrveClient as Object, msg as dynamic) as Void
-    msgType = type(msg)
+    m.global.unobserveField("SwrveDebug")
+    m.global.unobserveField("SwrveIsQAUser")
+    m.global.unobserveField("SwrveCustomCallback")
+    m.global.unobserveField("swrveShowIAM")
+    m.global.unobserveField("swrveCurrentIAM")
+    m.global.unobserveField("SwrveShutdown")
+    m.global.unobserveField("swrveResourcesAndCampaigns")
+    m.global.unobserveField("SwrveResourcesDiffObjectReady")
+    m.global.unobserveField("swrveAssetsReady")
+    m.global.unobserveField("SwrveEvent")
+    m.global.unobserveField("SwrveClickEvent")
+    m.global.unobserveField("SwrvePurchaseEvent")
+    m.global.unobserveField("SwrveUserUpdate")
+    m.global.unobserveField("SwrveImpressionEvent")
+    m.global.unobserveField("messageWillRender")
+    m.global.unobserveField("swrveSDKHasCustomRenderer")
+    m.global.unobserveField("SwrveGlobalIdentifyExternalID")
+    m.global.unobserveField("SwrveGlobalIdentifyExternalIDCallback")
+    m.global.unobserveField("SwrveGetNewResourcesDiff")
+    m.global.unobserveField("SwrveGlobalCurrencyGiven")
+    m.global.unobserveField("SwrveGlobalUserUpdateWithDate")
+    m.global.unobserveField("SwrveGlobalIAPWithoutReceipt")
+    m.global.unobserveField("SwrveGlobalFlushAndClean")
 
-    if msgType = "roSGNodeEvent"
-        if msg.getField() = "forceFlush" and msg.getData() = true
-            SWLog("Force flush has been requested.")
-            m.global = getGlobalAA().global
-            flushAndClean(swrveClient)
-            m.global.forceFlush = false
-        end if
-    end if
-    if msgType = "roSGNodeEvent"
-        if msg.getField() = "swrveResourcesDiff" and msg.getData() = true
-            SWLog("swrveResourcesDiff has been requested.")
-            m.global = getGlobalAA().global
-            m.global.swrveResourcesDiffObjectReady = GetResourcesDiffSorted()
-            m.global.swrveResourcesDiff = false
-        end if
-    end if
-    'This will check the time and see if it has been x seconds..if yes flush the buffer'
+    m.global.removeField("SwrveDebug")
+    m.global.removeField("SwrveIsQAUser")
+    m.global.removeField("SwrveCustomCallback")
+    m.global.removeField("swrveShowIAM")
+    m.global.removeField("swrveCurrentIAM")
+    m.global.removeField("SwrveShutdown")
+    m.global.removeField("swrveResourcesAndCampaigns")
+    m.global.removeField("SwrveResourcesDiffObjectReady")
+    m.global.removeField("swrveAssetsReady")
+    m.global.removeField("SwrveEvent")
+    m.global.removeField("SwrveClickEvent")
+    m.global.removeField("SwrvePurchaseEvent")
+    m.global.removeField("SwrveUserUpdate")
+    m.global.removeField("SwrveImpressionEvent")
+    m.global.removeField("messageWillRender")
+    m.global.removeField("swrveSDKHasCustomRenderer")
+    m.global.removeField("SwrveGlobalIdentifyExternalID")
+    m.global.removeField("SwrveGlobalIdentifyExternalIDCallback")
+    m.global.removeField("SwrveGetNewResourcesDiff")
+    m.global.removeField("SwrveGlobalCurrencyGiven")
+    m.global.removeField("SwrveGlobalUserUpdateWithDate")
+    m.global.removeField("SwrveGlobalIAPWithoutReceipt")
+    m.global.removeField("SwrveGlobalFlushAndClean")
+end function
+
+
+
+function SwrveOnTimer()
     now = CreateObject("roDateTime").AsSeconds()
-    if now > swrveClient.swrveNextFlush then
-        flushAndClean(swrveClient)
-        updateLastSessionDate()
-    end if
-    if now > swrveClient.swrveNextUpdateCampaignsAndResources
-        processUserCampaignsAndResources(swrveClient)
+    SWLog("SwrveOnTimer now:" + now.toStr())
+
+    SwrveFlushAndClean()
+
+    SWLog("SwrveOnTimer next process campaigns and resources:" + m.swrveNextUpdateCampaignsAndResources.toStr())
+    SWLog("SwrveOnTimer m.swrve_config.flushingDelay:" + m.swrve_config.flushingDelay.toStr())
+    SWLog("SwrveOnTimer m.swrve_config.campaignsAndResourcesDelay:" + m.swrve_config.campaignsAndResourcesDelay.toStr())
+
+    if now >= m.swrveNextUpdateCampaignsAndResources
+        if m.swrve_config.flushingDelay <> Invalid AND m.swrveDelayProcessUserCampaignsAndResources = Invalid
+            updateLastSessionDate()
+            swrveDelayProcessUserCampaignsAndResources = CreateObject("RoSGNode", "Timer")
+            swrveDelayProcessUserCampaignsAndResources.duration = m.swrve_config.flushingDelay
+            swrveDelayProcessUserCampaignsAndResources.ObserveField("fire","SwrveOnDelayProcessUserCampaignsAndResources")
+            swrveDelayProcessUserCampaignsAndResources.Control = "start"
+            m.swrveDelayProcessUserCampaignsAndResources = swrveDelayProcessUserCampaignsAndResources
+        end if
     end if
 end function
 
-'Sets an observer and a callback defined by user, for when users select a button on an iam'
-Function setCustomCallback(context as Object, callbackName as String)
-    if context.swrveiamgroup <> invalid
-        context.swrveiamgroup.observeField("customActionCallback", callbackName)
+function SwrveOnDelayProcessUserCampaignsAndResources()
+    SWLog("SwrveOnDelayProcessUserCampaignsAndResources()")
+    if m.swrveDelayProcessUserCampaignsAndResources <> Invalid
+        m.swrveDelayProcessUserCampaignsAndResources.control = "stop"
+        m.swrveDelayProcessUserCampaignsAndResources = Invalid
     end if
-End Function
+    processUserCampaignsAndResources()
+end function
 
-'Sets an observer and a callback defined by user, for when users select a button on an iam'
-Function setNewResourcesCallback(callbackName as String)
-    m.global = getGlobalAA().global
-    m.global.observeField("swrveResourcesAndCampaigns", callbackName)
-End Function
+function processUserCampaignsAndResources()
+    GetUserResourcesAndCampaigns("SwrveOnUserCampaignsAndResources")
+end function
 
-Function setCustomMessageRender(callbackName as String)
-    m.global = getGlobalAA().global
-    m.global.observeField("messageWillRender", callbackName)
-    swrve = GetSwrveClientInstance()
-    m.global.swrveSDKHasCustomRenderer = true
-    SynchroniseSwrveInstance(swrve)
-End Function
+function SwrveOnUserCampaignsAndResources(response = {} as Dynamic)
 
-Function setNewResourcesDiffCallback(callbackName as String)
-    m.global = getGlobalAA().global
-    m.global.observeField("swrveResourcesDiffObjectReady", callbackName)
-End Function
+    if(response <> invalid AND type(response) = "roSGNodeEvent")
+        resAndCamp = response.getData()
+    end if
 
-Function processUserCampaignsAndResources(swrveClient)
-    
     gotNewResourcesOrCampaigns = false
-    resAndCamp = GetUserResourcesAndCampaigns()
-    if resAndCamp.code < 400
+
+    if resAndCamp <> Invalid AND resAndCamp.code < 400 AND resAndCamp.code > 0
         if resAndCamp.headers <> invalid and resAndCamp.headers.etag <> invalid
             etag = resAndCamp.headers.etag
             SwrveSaveStringToPersistence(SwrveConstants().SWRVE_ETAG_FILENAME, etag)
         end if
-        if DictionaryHasUserResource(resAndCamp) 'If not, it means it hasn't changed (etag check), just use the one from persistence
+        if SwrveDictionaryHasUserResource(resAndCamp) 'If not, it means it hasn't changed (etag check), just use the one from persistence
             gotNewResourcesOrCampaigns = true
-            userResources = GetUserResourcesFromDictionarySafe(resAndCamp)
+            userResources = SwrveGetUserResourcesFromDictionarySafe(resAndCamp)
             userResoucesStr = FormatJSON(userResources)
-            userResourcesSignature = md5(userResoucesStr)
-            swrveClient.userResources = userResources
-            swrveClient.resourceManager = SwrveResourceManager(userResources)
+            userResourcesSignature = SwrveMd5(userResoucesStr)
+            m.userResources = userResources
+            m.global.userResources = m.userResources
+            m.resourceManager = SwrveResourceManager(userResources)
             userResourcesStoredSignature = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_RESOURCES_SIGNATURE_FILENAME)
 
             if userResourcesStoredSignature <> userResourcesSignature
@@ -514,61 +616,80 @@ Function processUserCampaignsAndResources(swrveClient)
                 SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_RESOURCES_SIGNATURE_FILENAME, userResourcesSignature)
             end if
         end if
-        if DictionaryHasUserCampaigns(resAndCamp)
+        if SwrveDictionaryHasUserCampaigns(resAndCamp)
             gotNewResourcesOrCampaigns = true
-            userCampaigns = GetUserCampaignsFromDictionarySafe(resAndCamp)
+            userCampaigns = SwrveGetUserCampaignsFromDictionarySafe(resAndCamp)
             userCampaignsStr = FormatJSON(userCampaigns)
-            userCampaignsSignature = md5(userCampaignsStr)
+            userCampaignsSignature = SwrveMd5(userCampaignsStr)
             userCampaignsStoredSignature = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_SIGNATURE_FILENAME)
 
-            swrveClient.userCampaigns = userCampaigns
+            m.userCampaigns = userCampaigns
             if userCampaigns.cdn_root <> invalid
-                swrveClient.userCampaigns.cdn_root = userCampaigns.cdn_root
+                m.userCampaigns.cdn_root = userCampaigns.cdn_root
             else if userCampaigns.cdn_paths <> invalid
-                swrveClient.userCampaigns.cdn_root = userCampaigns.cdn_paths.message_images
+                m.userCampaigns.cdn_root = userCampaigns.cdn_paths.message_images
             end if
+            m.global.userCampaigns = m.userCampaigns
+
             if userCampaignsStoredSignature <> userCampaignsSignature
                 'store it and its signature'
                 SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_FILENAME, userCampaignsStr)
                 SwrveSaveStringToPersistence(SwrveConstants().SWRVE_USER_CAMPAIGNS_SIGNATURE_FILENAME, userCampaignsSignature)
             end if
-            SwrveCampaignsDownloaded(swrveClient)
-            DownloadAssetsFromCampaigns(swrveClient, userCampaigns)
+            SwrveCampaignsDownloaded()
+            DownloadAssetsFromCampaigns()
         else
-          
-            if not CheckAssetsAllDownloaded(swrveClient)
-                DownloadAssetsFromCampaigns(swrveClient, swrveClient.userCampaigns)
-            end if 
+            SwrveCheckAssetsAllDownloaded("SwrveDownloadAssetsIfAllAssetsNotDownloaded")
+        end if
 
+        print "!!!!!!!!!!!!!!!!!!! SwrveOnUserCampaignsAndResources() !!!!!!!!!!!!!!!!!!!"
+        print "resAndCamp.data:"; resAndCamp.data
+
+        if resAndCamp.data <> invalid and resAndCamp.data.flush_refresh_delay <> invalid
+            SWLog("Updating config flush delay to " + (resAndCamp.data.flush_refresh_delay / 1000).toStr() + " seconds")
+            m.swrve_config.flushingDelay = Int(resAndCamp.data.flush_refresh_delay / 1000)
+            SwrveFlushAndClean()
         end if
-        if resAndCamp.data <> invalid and resAndCamp.data.flush_frequency <> invalid
-            swrveClient.configuration.flushingDelay = Int(resAndCamp.data.flush_frequency / 1000)
-            flushAndClean(swrveClient)
-        end if
+
         if resAndCamp.data.qa <> invalid
-            swrveClient.configuration.isQAUser = IsQAUser(resAndCamp)
-            if swrveClient.configuration.isQAUser
+            m.SwrveQA = resAndCamp.data.qa
+            m.swrve_config.isQAUser = SwrveIsQAUser(resAndCamp)
+            m.global.SwrveIsQAUser = m.swrve_config.isQAUser
+            if m.swrve_config.isQAUser
                 SwrveSaveObjectToPersistence(SwrveConstants().SWRVE_USER_QA_FILENAME, resAndCamp.data.qa)
                 'Investigate as to why there is no logging_url in the qa json object.'
                 'userPropertiesToBabble(swrveClient, resAndCamp.data.qa)
             end if
         end if
-        swrveClient.swrveNextUpdateCampaignsAndResources += swrveClient.configuration.campaignsAndResourcesDelay
-        SynchroniseSwrveInstance(swrveClient)
+
+        if resAndCamp.data <> invalid and resAndCamp.data.flush_frequency <> invalid
+            SWLog("Updating config campaignsAndResourcesDelay delay to " + (resAndCamp.data.flush_frequency / 1000).toStr() + " seconds")
+            m.swrve_config.campaignsAndResourcesDelay = Int(resAndCamp.data.flush_frequency / 1000)
+        end if
+
+        'TODO: m.swrve_config.campaignsAndResourcesDelay should update with value from back end. User this ? "flush_frequency": 60000
+        m.swrveNextUpdateCampaignsAndResources += m.swrve_config.campaignsAndResourcesDelay
+
         if gotNewResourcesOrCampaigns or m.global.swrveResourcesAndCampaigns = false
-         
             'Notify observers that we got new campaigns and resources'
-            m.global = getGlobalAA().global
             m.global.swrveResourcesAndCampaigns = true
-           
         end if
     else 
-        swrveClient.swrveNextUpdateCampaignsAndResources += swrveClient.configuration.campaignsAndResourcesDelay
-        SynchroniseSwrveInstance(swrveClient)
+        m.swrveNextUpdateCampaignsAndResources += m.swrve_config.campaignsAndResourcesDelay
     end if
-End Function
+end function
 
-Function BuildArrayOfAssetIDs(swrveClient, campaigns as object) as object
+function SwrveDownloadAssetsIfAllAssetsNotDownloaded(responseEvent)
+    if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+        response = responseEvent.getData()
+    end if
+    responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
+    if(response.allFilesExist = false)
+        DownloadAssetsFromCampaigns()
+    end if
+end function
+
+function SwrveBuildArrayOfAssetIDs(campaigns as object) as object
     ids = []
     for each campaign in campaigns.campaigns
         if campaign.messages <> invalid
@@ -578,7 +699,7 @@ Function BuildArrayOfAssetIDs(swrveClient, campaigns as object) as object
                         for each format in message.template.formats
                             if format.images <> invalid
                                 for each image in format.images 
-                                    if image.image <> invalid and image.image.type = "asset"
+                                    if image.image <> invalid and image.image.type = "asset" AND image.image.value <> Invalid AND NOT SwrveArrayContains(ids, image.image.value)
                                         id = image.image.value
                                         ids.push(id)
                                     end if
@@ -586,7 +707,7 @@ Function BuildArrayOfAssetIDs(swrveClient, campaigns as object) as object
                             end if
                             if format.buttons <> invalid
                                 for each button in format.buttons 
-                                    if button.image_up <> invalid and button.image_up.type = "asset"
+                                    if button.image_up <> invalid and button.image_up.type = "asset" AND button.image_up.value <> Invalid AND NOT SwrveArrayContains(ids, button.image_up.value)
                                         id = button.image_up.value
                                         ids.push(id)
                                     end if
@@ -599,78 +720,97 @@ Function BuildArrayOfAssetIDs(swrveClient, campaigns as object) as object
         end if
     end for
     return ids
-End Function
+end function
 
-Function DownloadAssetsFromCampaigns(swrveClient as Object, campaigns as Object) 
+function SwrveArrayContains(arr as Object, value as String) as Boolean
+    for each entry in arr
+        if entry = value
+            return true
+        end if
+    end for
+    return false
+end function
+
+function DownloadAssetsFromCampaigns() 
+    campaigns = m.userCampaigns
     if campaigns.campaigns <> invalid
-        ids = BuildArrayOfAssetIDs(swrveClient, campaigns)
-        DownloadAndStoreAssets(swrveClient, ids, assetsDownloadCallback)
+        ids = SwrveBuildArrayOfAssetIDs(campaigns)
+        DownloadAndStoreAssets(ids)
     end if
-End Function
+end function
 
-Function assetsDownloadCallback()   
-    swrveClient = GetSwrveClientInstance()
+function assetsDownloadCallback()  
     m.global.swrveAssetsReady = true
     fakeEvent = SwrveCreateEvent(SwrveConstants().SWRVE_EVENT_AUTOSHOW_SESSION_START)
-    CheckEventForTriggers(swrveClient, fakeEvent)
+    SwrveCheckEventForTriggers(fakeEvent)
 End function
 
 ' Returns what's in the saved queue. returns an empty array if nothing was saved
-Function CheckForSavedQueue(swrveClient as Object) as Object
+function CheckForSavedQueue() as Object
     savedQueue = SwrveStorageManager().SwrveGetQueueFromStorage()
+    'print "CheckForSavedQueue() savedQueue:"; savedQueue
     if savedQueue <> invalid and type(savedQueue) = "roArray" and savedQueue.count() > 0
+        'print "CheckForSavedQueue() savedQueue:"; savedQueue.count()
         return savedQueue
     end if
     return []
-End Function
+end function
 
-Function RestoreSavedQueue(swrveClient as Object) as Object
-    savedQueue = CheckForSavedQueue(swrveClient) 'Checking if there are any saved events we need to recover'
+function RestoreSavedQueue()
+    savedQueue = CheckForSavedQueue() 'Checking if there are any saved events we need to recover'
     if savedQueue.count() > 0 'If so, add them first to the current queue'
         SwrveStorageManager().SwrveClearQueueFromStorage()
 
         wholeQueue = []
         wholeQueue.append(savedQueue)
-        wholeQueue.append(swrveClient.eventsQueue)
-        swrveClient.eventsQueue = wholeQueue
+        wholeQueue.append(m.eventsQueue)
+        m.eventsQueue = wholeQueue
     end if    
-
-    SynchroniseSwrveInstance(swrveClient)
-    return swrveClient
 end function
 
-Function flushAndClean(swrveClient as Object)
- 
-    swrveClient = RestoreSavedQueue(swrveClient) 'Checking if there are any saved events we need to recover'
+function SwrveSetUserCampaigns(campaigns)
+    m.userCampaigns = campaigns
+end function
 
-    success = swrveClient.PostQueueAndFlush(swrveClient) 
-    swrveClient.swrveNextFlush = swrveClient.swrveNextFlush + swrveClient.configuration.flushingDelay
-    SynchroniseSwrveInstance(swrveClient)
-End Function
+function SwrveGetUserCampaigns() as Object
+    return m.userCampaigns
+end function
+
+function SwrveSetResourceManager(resourceManager)
+    m.resourceManager = resourceManager
+end function
+
+function SwrveGetResourceManager() as Object
+    return m.resourceManager
+end function
+
+function SwrveSetEventsQueue(que)
+    m.eventsQueue = que
+end function
+
+function SwrveGetEventsQueue() as Object
+    return m.eventsQueue
+end function
+
+function SwrveFlushAndClean()
+    RestoreSavedQueue()
+    SwrvePostQueueAndFlush() 
+    'm.swrveNextFlush = m.swrveNextFlush + m.swrve_config.flushingDelay
+end function
 
 
-Function SwrveForceFlush()
-    'request that we force the update to flush
-    if m.global = invalid
-        m.global = getGlobalAA().global
-    end if
-    m.global.forceFlush = true
-End Function
-
-
-Function SaveQueueToPersistence(swrveClient as Object) as Boolean
-    if swrveClient.eventsQueue <> invalid and swrveClient.eventsQueue.Count() > 0
+function SaveQueueToPersistence() as Boolean
+    if m.eventsQueue <> invalid and m.eventsQueue.Count() > 0
         oldqueue = SwrveGetQueueFromStorage()
-        oldqueue.append(swrveClient.eventsQueue)
+        oldqueue.append(m.eventsQueue)
         success = SwrveStorageManager().SwrveSaveQueueToStorage(oldqueue)
-        swrveClient.eventsQueue.Clear()
-        SynchroniseSwrveInstance(swrveClient)
+        m.eventsQueue.Clear()
     end if
-End Function
+end function
 
 
 ' Returns a dictionary of default user update properties'
-Function userInfosDictionary() as Object
+function SwrveUserInfosDictionary() as Object
     device = CreateObject("roDeviceInfo")
 
     dt = CreateObject ("roDateTime")
@@ -709,7 +849,7 @@ Function userInfosDictionary() as Object
         "swrve.install_date": strDate
     }
     return attributes
-End Function
+end function
 
 ' Read the installation date. If it doesn't exist, save it to registry
 function checkOrWriteInstallDate() as Object
@@ -787,22 +927,22 @@ function SwrveFirstEverSession() as Boolean
     end if
 end function
 
-Function SetSessionStartDate() as String
+function SetSessionStartDate() as String
     date = CreateObject("roDateTime")
     SwrveSaveStringToPersistence(SwrveConstants().SWRVE_START_SESSION_DATE_KEY, date.ToISOString())
     return StrI(date.AsSeconds()).Trim()
-End Function
+end function
 
-Function GetSessionStartDate() as String
+function GetSessionStartDate() as String
     dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_START_SESSION_DATE_KEY, "")
     date = CreateObject("roDateTime")
     if dateString <> ""
         date.FromISO8601String(dateString)
         return StrI(date.AsSeconds()).Trim()
     end if
-End Function
+end function
 
-Function GetSessionStartDateAsSeconds() as Integer
+function GetSessionStartDateAsSeconds() as Integer
     dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_START_SESSION_DATE_KEY, "")
     date = CreateObject("roDateTime")
     if dateString <> ""
@@ -812,18 +952,18 @@ Function GetSessionStartDateAsSeconds() as Integer
     return -1
 end Function
 
-Function GetSessionStartDateAsReadable() as String
+function GetSessionStartDateAsReadable() as String
     dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_START_SESSION_DATE_KEY, "")
     return dateString
-End Function
+end function
 
-Function GetCurrentUserID() as String
+function GetCurrentUserID() as String
     dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_ID_KEY, "")
     return dateString
-End Function
+end function
 
-Function GetUserQAStatus(swrveClient as Object) as Boolean
-    return swrveClient.configuration.isQAUser
+function GetUserQAStatus() as Boolean
+    return m.swrve_config.isQAUser
 end Function
 
 ' Determine if we need to send a new session_start of if we keep the session live'
@@ -837,8 +977,8 @@ function isThisANewSession() as Boolean
     now = CreateObject("roDateTime").AsSeconds()
 
     difference = Abs(now-lastSession)
-    SWLog("Last session was " + str(difference) + " seconds ago. Session interval is " +  str(m.global.swrve.private.config.newSessionInterval) + " seconds")
-    if difference > m.global.swrve.private.config.newSessionInterval
+    SWLog("Last session was " + str(difference) + " seconds ago. Session interval is " +  str(m.swrve_config.newSessionInterval) + " seconds")
+    if difference > m.swrve_config.newSessionInterval
         return true
     else
         return false
@@ -849,33 +989,115 @@ end function
 ' This will basically be called regularly to save the current time to make sure we have an approximate time
 ' of the last time the app was running, in case the app is closed or closes unexpectedly.
 function updateLastSessionDate() as Object
-    
     dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_LAST_SESSION_DATE_KEY, "")
     date = CreateObject("roDateTime")
     SwrveSaveStringToPersistence(SwrveConstants().SWRVE_LAST_SESSION_DATE_KEY, date.ToISOString())
     if dateString = ""
         SWLog("")
     else
-        SWLog("Updating last session time " + dateString)
+        'SWLog("Updating last session time " + dateString)
     end if
     return dateString 
-
 end function
 
 'Returns the api key'
-Function GetAPIKey(swrveClient) as String
-    return swrveClient.configuration.apikey
-End Function
+function GetAPIKey(swrveClient) as String
+    return m.swrve_config.apikey
+end function
 
 'returns the install date'
-Function GetInstallDate(swrveClient) as Integer
+function GetInstallDate(swrveClient) as Integer
     date = checkOrWriteInstallDate()
     return date.AsSeconds()
-End Function
+end function
 
 'returns the joined date'
-Function GetJoinedDate(swrveClient) as Integer
+function GetJoinedDate(swrveClient) as Integer
     date = checkOrWriteJoinedDate()
     return date.AsSeconds()
-End Function
+end function
+
+function RemoveIAMInClient()
+    m.top.GetScene().dialog = Invalid
+end function
+
+
+function ShowIAMInClient()
+    if m.global.swrveShowIAM
+        SWLog("SwrveClient() Swrve has been asked to show an IAM")
+        message = m.global.swrveCurrentIAM
+
+        d = CreateObject("RoSGNode", "SwrveDialog")
+        d.title = ""
+        d.maxHeight = 200
+        d.graphicWidth = 1385
+        d.graphicHeight = 862
+
+        d.asset_location = SwrveConstants().SWRVE_ASSETS_LOCATION
+        d.iam = message
+        m.top.GetScene().dialog = d
+        d.setFocus = true
+
+        swreveSendImpressionAfterIAMTimer = CreateObject("RoSGNode", "Timer")
+        swreveSendImpressionAfterIAMTimer.duration = 2
+        swreveSendImpressionAfterIAMTimer.ObserveField("fire","SwrveOnDelaySendImpressionEvent")
+        swreveSendImpressionAfterIAMTimer.Control = "start"
+        m.swreveSendImpressionAfterIAMTimer = swreveSendImpressionAfterIAMTimer
+    end if
+end function
+
+function SwrveOnDelaySendImpressionEvent()
+    if m.swreveSendImpressionAfterIAMTimer <> Invalid
+        m.swreveSendImpressionAfterIAMTimer.control = "stop"
+        m.swreveSendImpressionAfterIAMTimer = Invalid
+    end if
+
+    if(m.global.swrveCurrentIAM <> Invalid)
+        SwrveImpressionEvent(m.global.swrveCurrentIAM)
+    end if
+end function
+
+function SwrveSetupGlobals() as Void
+    m.date = CreateObject("roDateTime")
+    g = GetGlobalAA().global
+    'date values used to benchmark set up times. 
+    g.addFields( {startSeconds: m.date.AsSeconds(), startMilli: m.date.GetMilliseconds(), appStartSecondsDesc: (m.date.AsSeconds() + (m.date.GetMilliseconds() / 1000)) - 1000000000 })
+    'This will be used as an observed value to show IAMs from anywhere in the app'
+    g.AddField("swrveShowIAM", "boolean", true)
+    'This will be used as an observed value to show IAMs from anywhere in the app'
+    g.AddField("swrveCurrentIAM", "assocarray", true)
+    'This value can be observed and will be notified when the diff is ready
+    g.AddField("SwrveResourcesDiffObjectReady", "assocarray", true)
+
+     'Shut down Swrve SDK from Render Thread
+    g.AddField("SwrveShutdown", "boolean", true)
+     'This value can be observed and will be notified when the assets have been downloaded
+    g.AddField("swrveAssetsReady", "boolean", true)
+
+    g.AddField("swrveResourcesAndCampaigns", "boolean", true)
+    g.setField("swrveResourcesAndCampaigns", false)
+    g.AddField("messageWillRender", "assocarray", true)
+    g.setField("messageWillRender", {})
+    g.AddField("SwrveCustomCallback", "string", true)
+    g.AddField("SwrveEvent", "assocarray", true)
+    g.AddField("SwrveGlobalIdentifyExternalIDCallback", "assocarray", true)
+    g.setField("SwrveGlobalIdentifyExternalIDCallback", {})
+    g.AddField("SwrveGlobalIdentifyExternalID", "string", true)
+    g.AddField("SwrveDebug", "boolean", true)
+    g.AddField("SwrveIsQAUser", "boolean", true)
+    g.AddField("SwrveClickEvent", "assocarray", true)
+    g.AddField("SwrvePurchaseEvent", "assocarray", true)
+    g.AddField("SwrveUserUpdate", "assocarray", true)
+    g.AddField("SwrveImpressionEvent", "assocarray", true)
+    g.AddField("swrveSDKHasCustomRenderer", "boolean", true)
+    g.AddField("userResources", "array", true)
+    g.AddField("userCampaigns", "assocarray", true)
+
+    g.AddField("SwrveGetNewResourcesDiff", "boolean", true)
+    g.AddField("SwrveGlobalCurrencyGiven", "assocarray", true)
+    g.AddField("SwrveGlobalUserUpdateWithDate", "assocarray", true)
+    g.AddField("SwrveGlobalIAPWithoutReceipt", "assocarray", true)
+    g.AddField("SwrveGlobalFlushAndClean", "boolean", true)
+    
+end function
 
