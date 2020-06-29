@@ -6,7 +6,7 @@ function SwrveEvent(eventName as String, payload = {} as Object) as void
    		SwrveCheckEventForTriggers(event)
    		SwrveAddEventToQueue(event)
    		if(SwrveIsLoggingQAUser())
-   			SwrveAddEventToQueue(SwrveCreateWrappedEvent(event))
+   			SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(event))
    		end if
    	end if
 end function
@@ -19,7 +19,7 @@ function SwrveDeviceUpdate(attributes as Object) as void
 		if ua.attributes <> invalid
 			SwrveAddEventToQueue(ua)
 			if(SwrveIsLoggingQAUser())
-				SwrveAddEventToQueue(SwrveCreateWrappedUserUpdate(ua))
+				SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(ua))
 			end if
 		end if
 	end if
@@ -32,7 +32,7 @@ function SwrveUserUpdate(attributes as Object) as void
 		if ua.attributes <> invalid
 			SwrveAddEventToQueue(ua)
 			if(SwrveIsLoggingQAUser())
-				SwrveAddEventToQueue(SwrveCreateWrappedUserUpdate(ua))
+				SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(ua))
 			end if
 		end if
 	end if
@@ -45,7 +45,7 @@ function SwrveUserUpdateWithDate(name as String, date as Object) as void
 		if ua.attributes <> invalid
 			SwrveAddEventToQueue(ua)
 			if(SwrveIsLoggingQAUser())
-				SwrveAddEventToQueue(SwrveCreateWrappedUserUpdate(ua))
+				SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(ua))
 			end if
 		end if
 	end if
@@ -57,7 +57,7 @@ function SwrvePurchaseEvent(itemQuantity as Integer, itemName as String, itemPri
 	if pa <> invalid
 		SwrveAddEventToQueue(pa)
 		if(SwrveIsLoggingQAUser())
-			SwrveAddEventToQueue(SwrveCreateWrappedPurchaseEvent(pa))
+			SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(pa))
 		end if
 	end if
 end function
@@ -68,7 +68,7 @@ function SwrveCurrencyGiven(givenCurrency as String, givenAmount as Integer) as 
 	if cg <> invalid
 		SwrveAddEventToQueue(cg)
 		if(SwrveIsLoggingQAUser())
-			SwrveAddEventToQueue(SwrveCreateWrappedCurrencyGiven(cg))
+			SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(cg))
 		end if
 	end if
 end function
@@ -79,7 +79,7 @@ function SwrveIAPWithoutReceipt(product as Object, rewards as Object, currency a
 	if pa <> invalid and pa.count() > 0
 		SwrveAddEventToQueue(pa)
 		if(SwrveIsLoggingQAUser())
-			SwrveAddEventToQueue(SwrveCreateWrappedIAPWithoutReceipt(pa))
+			SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(pa))
 		end if
 	end if
 end function
@@ -91,7 +91,7 @@ function SwrveFirstSession() as void
 		if ua.name <> invalid
 			SwrveAddEventToQueue(ua)
 			if(SwrveIsLoggingQAUser())
-	   			SwrveAddEventToQueue(SwrveCreateWrappedEvent(ua))
+				SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(ua))   
 	   		end if
 		end if
 	end if
@@ -103,7 +103,7 @@ function SwrveSessionStart() as void
 	if ua <> invalid
 		SwrveAddEventToQueue(ua)
 		if(SwrveIsLoggingQAUser())
-			SwrveAddEventToQueue(SwrveCreateWrappedSessionStart(ua))
+			SwrveAddEventToQAQueue(SwrveCreateWrappedEvent(ua))   
 		end if
 	end if
 end function
@@ -122,10 +122,30 @@ function SwrveCreateEvent(eventName as String, payload = {} as Object) as Object
 end function
 
 function SwrveCreateWrappedEvent(event as Object) as object
-	payload = {}
-	for each key in event.payload.Keys()
-		payload.AddReplace(key, event.payload[key])
+	new_parameters = {}
+	new_log_details = {}
+	for each key in event.Keys()
+	 if key = "type"
+	 	new_log_details.AddReplace(key, event[key])
+	 else if key = "time"
+	    'Dashboard QA event expects a client_time key
+	 	new_log_details.AddReplace("client_time", event[key])
+	 else if key = "seqnum"
+	    seqnum = event[key]
+	 	new_log_details.AddReplace("seqnum", seqnum)
+	 else if key = "payload"
+	 	'Dashboard QA, expects payload as string
+		payloadString = FormatJSON(event[key])
+		if payloadString <> invalid 
+		  new_log_details.AddReplace(key, payloadString)
+		end if
+	 else
+	    'All other values add to parameters dictionary
+		new_parameters.AddReplace(key, event[key])
+	 end if
 	end for
+	
+	new_log_details.AddReplace("parameters", new_parameters)
 
 	this = {}
 	this.type = "qa_log_event"
@@ -133,15 +153,8 @@ function SwrveCreateWrappedEvent(event as Object) as object
     this.time = now.toTimeToken()
     this.log_type = "event"
     this.log_source = "sdk"
-    this.log_details = {
-    	type : "event",
-    	parameters: {
-    		name: event.name,
-    		payload: payload
-    		},
-    	seqnum : SwrveGetSeqNum(),
-    	client_time: now.toTimeToken()
-    }
+    this.log_details = new_log_details
+
     return this
 end function
 
@@ -197,31 +210,6 @@ function SwrveCreateDeviceUpdate(attributes as Object) as Object
     return this
 end function
 
-function SwrveCreateWrappedUserUpdate(event as Object) as object
-
-	attributes = {}
-	for each key in event.attributes.Keys()
-		attributes.AddReplace(key, event.attributes[key])
-	end for
-
-	this = {}
-	this.type = "qa_log_event"
-	now = SwrveDate(CreateObject("roDateTime"))
-    this.time = now.toTimeToken()
-    this.log_type = "event"
-    this.log_source = "sdk"
-    this.log_details = { 
-    	type : "user",
-    	parameters: { 
-    		"attributes" : attributes
-    		},
-    	seqnum : SwrveGetSeqNum(),
-    	client_time: now.toTimeToken()
-    }
-
-    return this
-end function
-
 ' User update event creation'
 function SwrveCreatePurchaseEvent(quantity as String, itemName as String, cost as String, currency as String) as Object
  	this = {}
@@ -238,28 +226,6 @@ function SwrveCreatePurchaseEvent(quantity as String, itemName as String, cost a
     return this
 end function
 
-
-function SwrveCreateWrappedPurchaseEvent(event as Object) as object
-	this = {}
-	this.type = "qa_log_event"
-	now = SwrveDate(CreateObject("roDateTime"))
-    this.time = now.toTimeToken()
-    this.log_type = "event"
-    this.log_source = "sdk"
-    this.log_details = { 
-    	type : "purchase",
-    	parameters: {
-    		quantity: event.quantity,
-    		item: event.item,
-    		cost: event.cost,
-    		currency: event.currency
-    		},
-    	seqnum :SwrveGetSeqNum(),
-    	client_time: now.toTimeToken()
-    }
-    return this
-end function
-
 'Currency Given event creation'
 function SwrveCreateCurrencyGiven(givenCurrency as String, givenAmount as String)
 	this = {}
@@ -273,28 +239,6 @@ function SwrveCreateCurrencyGiven(givenCurrency as String, givenAmount as String
 
     return this
 end function
-
-
-function SwrveCreateWrappedCurrencyGiven(event as Object) as object
-	this = {}
-	this.type = "qa_log_event"
-	now = SwrveDate(CreateObject("roDateTime"))
-    this.time = now.toTimeToken()
-    this.log_type = "event"
-    this.log_source = "sdk"
-    this.log_details = { 
-    	type : "currency_given",
-    	parameters: {
-    		given_amount: event.given_amount,
-    		given_currency: event.given_currency,
-    	
-    		},
-    	seqnum : SwrveGetSeqNum(),
-    	client_time: now.toTimeToken()
-    }
-    return this
-end function
-
 
 'Create IAP without receipt'
 function SwrveCreateIAPWithoutReceipt(product as Object, rewards as Object, currency as String, app_store) as Object
@@ -321,42 +265,6 @@ function SwrveCreateIAPWithoutReceipt(product as Object, rewards as Object, curr
     return this
 end function
 
-
-function SwrveCreateWrappedIAPWithoutReceipt(event as Object) as object
-
-	rewards = {}
-	for each key in event.rewards.Keys()
-		reward = {
-			type : event.rewards[key].type
-			amount: event.rewards[key].amount
-		}
-		rewards.AddReplace(key, reward)
-	end for
-
-
-	this = {}
-	this.type = "qa_log_event"
-	now = SwrveDate(CreateObject("roDateTime"))
-    this.time = now.toTimeToken()
-    this.log_type = "event"
-    this.log_source = "sdk"
-    this.log_details = { 
-    	type : "iap",
-    	parameters: {
-			item:event.name
-			quantity :event.quantity
-    		product_id: event.product_id,
-    		app_store: event.app_store,
-    		cost: event.cost,
-    		local_currency: event.local_currency
-    		"rewards": rewards
-    		},
-    	seqnum : SwrveGetSeqNum(),
-    	client_time: now.toTimeToken()
-    }
-    return this
-end function
-
 ' Generic user update event'
 function SwrveCreateUserUpdateWithDate(name as String, date as Object) as Object
 	this = {}
@@ -365,10 +273,9 @@ function SwrveCreateUserUpdateWithDate(name as String, date as Object) as Object
     this.seqnum = SwrveGetSeqNum()
     now = SwrveDate(CreateObject("roDateTime"))
     this.time = now.toTimeToken()
-
-    if date <> invalid and type(date) = "roDateTime"
+     if date <> invalid 
 	    this.attributes = {}
-	    this.attributes.AddReplace(name, date.ToISOString())
+	    this.attributes.AddReplace(name, date)
 	end if
     return this
 end function
@@ -385,30 +292,14 @@ function SwrveCreateSessionStartEvent() as Object
     return this
 end function
 
-function SwrveCreateWrappedSessionStart(event as Object) as object
-	this = {}
-	this.type = "qa_log_event"
-	now = SwrveDate(CreateObject("roDateTime"))
-    this.time = now.toTimeToken()
-    this.log_type = "event"
-    this.log_source = "sdk"
-    this.log_details = { 
-    	type : "session_start",
-    	parameters: {},
-    	seqnum : SwrveGetSeqNum(),
-    	client_time: now.toTimeToken()
-    }
-    return this
-end function
-
-
 function SwrveCampaignsDownloaded() as void
 	'TODO new campaign downloaded qa log
 end Function
 
 ' Add event to the general event queue 
 function SwrveAddEventToQueue(event as Object) as void
-	if m.swrve_config.stopped = false		
+	if m.swrve_config.stopped = false
+		m.eventsSentOrQueuedRecently = true		
 		m.eventsQueue.push(event)
 		SwrveCheckQueueSize()
 		oldqueue = SwrveGetQueueFromStorage()
@@ -419,9 +310,19 @@ function SwrveAddEventToQueue(event as Object) as void
 		end if
 		SwrveSaveQueueToStorage(oldqueue)
 		SwrveFlushQueue()
-		'SynchroniseSwrveInstance(swrveClient)
 	end if
+end function
 
+' Add event to QA queue
+function SwrveAddEventToQAQueue(event as Object) as void
+	if m.swrve_config.stopped = false
+		m.eventsSentOrQueuedRecently = true		
+		m.eventsQAQueue.push(event)
+		if m.eventsQAQueue.Count() > m.swrve_config.queueMaxSize
+		SWLog("Event QA queue is too large. Sending events now to backend and flushing buffer")
+		SwrvePostQAQueueAndFlush()
+		end if
+	end if
 end function
 
 'Will check the queue size compared to max size, and flush if we get over'
@@ -435,6 +336,11 @@ end function
 ' Flush the queue
 function SwrveFlushQueue() as void
 	m.eventsQueue.clear()
+end function
+
+' Flush the QA queue
+function SwrveFlushQAQueue() as void
+	m.eventsQAQueue.clear()
 end function
 
 ' Returns the size of the queue
@@ -460,6 +366,12 @@ function SwrveBuildBatchFromQueue() as Object
 		m.eventsQueue = CheckForSavedQueue()
 	end if
 	jsonObject.data = m.eventsQueue
+	return jsonObject
+end Function
+
+function SwrveBuildBatchFromQAQueue() as Object
+	jsonObject = SwrveBuildBatchMeta()
+	jsonObject.data = m.eventsQAQueue
 	return jsonObject
 end Function
 
@@ -497,6 +409,7 @@ function SwrvePostQueueAndFlush() as Object
 	end if
 
 	if payload <> invalid and payload.data.count() > 0
+		m.eventsSentOrQueuedRecently = true
 		if(m.swrve_config.mockHTTPPOSTResponses = true)
 			rtn = SendBatchPOST(payload, SwrveOnPostQueueAndFlush)
 			return rtn
@@ -540,5 +453,48 @@ function SwrveIsLoggingQAUser() as Boolean
   else
    return false
   end if
+end function
+
+function SwrvePostQAQueueAndFlush() as Object
+	payload = SwrveBuildBatchFromQAQueue()
+	SWLog("SwrvePostQAQueueAndFlush - Preparing request. ")
+	if(payload <> invalid AND payload.data <> invalid)
+		SWLog("SwrvePostQAQueueAndFlush - Items in batch QA que = " + payload.data.count().ToStr())
+	end if
+
+	if payload <> invalid and payload.data.count() > 0 
+	    m.eventsSentOrQueuedRecently = true
+		if(m.swrve_config.mockHTTPPOSTResponses = true)
+			rtn = SendBatchPOST(payload, SwrveOnPostQueueAndFlush)
+			return rtn
+		else 
+			SendBatchPOST(payload, "SwrveOnPostQAQueueAndFlush")
+		end if
+	end if
+end function
+
+function SwrveOnPostQAQueueAndFlush(responseEvent = {} as Dynamic) as Object
+	if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+		response = responseEvent.getData()
+		responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
+	else 
+		response = responseEvent
+	end if
+	
+	if response <> invalid
+		if response.Code < 400 'Success or redirection: Events have gone through'
+			SWLog("Success sending QA events to Swrve")
+		else if response.code < 500 'Failure, Client error
+			SWLog("QA client error sending events." + response.data)
+		else if response.code >= 500 'Failure, Server error
+			SWLog("QA server error sending events." + response.data)
+		end if
+		SwrveFlushQAQueue()
+
+		if(m.swrve_config.mockHTTPPOSTResponses = true)
+			return response
+		end if
+	end if
+	return {}
 end function
 

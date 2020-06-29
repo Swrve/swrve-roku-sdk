@@ -42,12 +42,16 @@ function Swrve(config as Object)
     m.joinedDate = CreateObject("roDateTime")
 
     m.eventsQueue = []
+    m.eventsQAQueue = []
     'm.swrveNextFlush = CreateObject("roDateTime").AsSeconds() 
 
     m.userResources = []
     m.userCampaigns = {}
 
     m.resourceManager = Invalid
+
+    'used to control campaign refresh
+    m.eventsSentOrQueuedRecently = true
 
     m.numberOfMessagesShown = 0
     m.startSessionAsSeconds = CreateObject("roDateTime").AsSeconds()
@@ -168,10 +172,6 @@ function SwrveGlobalIAPWithoutReceipt(msg)
     SwrveIAPWithoutReceipt(msgObj.product, msgObj.rewards, msgObj.currency, "unknown")
 end function
 
-
-
-
-
 function SwrveGlobalIdentify(msg) 
     print "SwrveGlobalIdentify() msg:"; msg
     SwrveIdentify(msg.getData()) 
@@ -224,8 +224,8 @@ end function
 function onSwrveClickEvent(payload)
     if(payload <> Invalid AND type(payload) = "roSGNodeEvent")
         eventOb = payload.getData()
-        if(eventOb.eventName <> Invalid AND eventOb.buttonname <> Invalid)
-            SwrveClickEvent(eventOb.eventName, eventOb.buttonname)
+        if(eventOb.message <> Invalid AND eventOb.buttonname <> Invalid)
+            SwrveClickEvent(eventOb.message, eventOb.buttonname)
         else 
             SWLog("m.global.SwrveClickEvent eventName or buttonname is invalid")
         end if
@@ -493,6 +493,7 @@ function SwrveShutdown() as Object
     m.installDate = Invalid
     m.joinedDate = Invalid
     m.eventsQueue = Invalid
+    m.eventsQAQueue = Invalid
     'm.swrveNextFlush = Invalid
     m.numberOfMessagesShown = Invalid
     m.startSessionAsSeconds = Invalid
@@ -556,20 +557,29 @@ function SwrveOnTimer()
     now = CreateObject("roDateTime").AsSeconds()
     SWLog("SwrveOnTimer now:" + now.toStr())
 
-    SwrveFlushAndClean()
-
     SWLog("SwrveOnTimer next process campaigns and resources:" + m.swrveNextUpdateCampaignsAndResources.toStr())
     SWLog("SwrveOnTimer m.swrve_config.flushingDelay:" + m.swrve_config.flushingDelay.toStr())
     SWLog("SwrveOnTimer m.swrve_config.campaignsAndResourcesDelay:" + m.swrve_config.campaignsAndResourcesDelay.toStr())
 
+    qa = m.SwrveQA
+    if(qa <> invalid AND qa.logging <> invalid AND qa.logging = true)
+        SWLog("QA User sending events")
+        SwrvePostQAQueueAndFlush() 
+    end if
+
     if now >= m.swrveNextUpdateCampaignsAndResources
+        m.swrveNextUpdateCampaignsAndResources = now + m.swrve_config.campaignsAndResourcesDelay
         if m.swrve_config.flushingDelay <> Invalid AND m.swrveDelayProcessUserCampaignsAndResources = Invalid
+            SwrveFlushAndClean()
             updateLastSessionDate()
-            swrveDelayProcessUserCampaignsAndResources = CreateObject("RoSGNode", "Timer")
-            swrveDelayProcessUserCampaignsAndResources.duration = m.swrve_config.flushingDelay
-            swrveDelayProcessUserCampaignsAndResources.ObserveField("fire","SwrveOnDelayProcessUserCampaignsAndResources")
-            swrveDelayProcessUserCampaignsAndResources.Control = "start"
-            m.swrveDelayProcessUserCampaignsAndResources = swrveDelayProcessUserCampaignsAndResources
+            if m.eventsSentOrQueuedRecently = true 
+                m.eventsSentOrQueuedRecently = false 
+                swrveDelayProcessUserCampaignsAndResources = CreateObject("RoSGNode", "Timer")
+                swrveDelayProcessUserCampaignsAndResources.duration = m.swrve_config.flushingDelay
+                swrveDelayProcessUserCampaignsAndResources.ObserveField("fire","SwrveOnDelayProcessUserCampaignsAndResources")
+                swrveDelayProcessUserCampaignsAndResources.Control = "start"
+                m.swrveDelayProcessUserCampaignsAndResources = swrveDelayProcessUserCampaignsAndResources
+            end if
         end if
     end if
 end function
@@ -668,14 +678,13 @@ function SwrveOnUserCampaignsAndResources(response = {} as Dynamic)
         end if
 
         'TODO: m.swrve_config.campaignsAndResourcesDelay should update with value from back end. User this ? "flush_frequency": 60000
-        m.swrveNextUpdateCampaignsAndResources += m.swrve_config.campaignsAndResourcesDelay
-
+        now = CreateObject("roDateTime").AsSeconds()
+        m.swrveNextUpdateCampaignsAndResources = now + m.swrve_config.campaignsAndResourcesDelay
+        
         if gotNewResourcesOrCampaigns or m.global.swrveResourcesAndCampaigns = false
             'Notify observers that we got new campaigns and resources'
             m.global.swrveResourcesAndCampaigns = true
         end if
-    else 
-        m.swrveNextUpdateCampaignsAndResources += m.swrve_config.campaignsAndResourcesDelay
     end if
 end function
 

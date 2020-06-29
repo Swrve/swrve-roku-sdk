@@ -2,7 +2,6 @@ function SwrveSDK() as Object
 	prototype = {}
 	prototype.global = GetGlobalAA().global
 
-
 	prototype.SwrveSetIdentifyExternalIDCallback = function(callback as String) as Void
 		if m.global.hasField("SwrveGlobalIdentifyExternalIDCallback")
 			m.global.observeField("SwrveGlobalIdentifyExternalIDCallback", callback)
@@ -15,20 +14,17 @@ function SwrveSDK() as Object
 		end if
 	end function
 
-
 	prototype.SwrveClearIdentifyExternalIDCallback = function ()
 		if m.global.hasField("SwrveGlobalIdentifyExternalIDCallback")
 			m.global.unobserveField("SwrveGlobalIdentifyExternalIDCallback")
 		end if
 	end function
 	
-
 	prototype.SwrveEvent = function (eventName as String, payload = {} as Object) as Void
 		if m.global.hasField("SwrveEvent")
 			m.global.SwrveEvent = {eventName:eventName, payload:payload}
 		end if
 	end function
-
 
 	prototype.SwrveSetCustomCallback = function (callback as String) as Void
 		if m.global.hasField("SwrveCustomCallback")
@@ -36,20 +32,17 @@ function SwrveSDK() as Object
 		end if
 	end function
 
-
 	prototype.ClearCustomCallback = function() as Void
 		if m.global.hasField("SwrveCustomCallback")
 			m.global.unobserveField("SwrveCustomCallback")
 		end if
 	end function
 
-	
 	prototype.SwrveClickEvent = function(message as Object, buttonName as String) as Void
 		if m.global.hasField("SwrveClickEvent")
 			m.global.SwrveClickEvent = {message:message, buttonname:buttonName}
 		end if
 	end function
-
 
 	prototype.SwrvePurchaseEvent = function(itemQuantity as Integer, itemName as String, itemPrice as Float, itemCurrency as String) as Void
 		if m.global.hasField("SwrvePurchaseEvent")
@@ -57,20 +50,17 @@ function SwrveSDK() as Object
 		end if
 	end function
 
-
 	prototype.SwrveUserUpdate = function(attributes as Object) as Void
 		if m.global.hasField("SwrveUserUpdate")
 			m.global.SwrveUserUpdate = attributes
 		end if
 	end function
 
-
 	prototype.SwrveImpressionEvent = function (message as Object) as Void
 		if m.global.hasField("SwrveImpressionEvent")
 			m.global.SwrveImpressionEvent = message
 		end if
 	end function
-
 
 	prototype.SwrveSetNewResourcesCallback = function (callback as String) as Void
 		if m.global.hasField("swrveResourcesAndCampaigns")
@@ -83,11 +73,6 @@ function SwrveSDK() as Object
 			m.global.unobserveField("swrveResourcesAndCampaigns")
 		end if
 	end function
-
-
-
-
-
 
 	prototype.SwrveGetNewResourcesDiff = function(callback as String) as Void
 		if m.global.hasField("SwrveResourcesDiffObjectReady")
@@ -103,7 +88,6 @@ function SwrveSDK() as Object
 			m.global.unobserveField("SwrveResourcesDiffObjectReady")
 		end if
 	end function
-
 
 	prototype.SwrveCurrencyGiven = function(givenCurrency as String, givenAmount as Integer) as Void
 		if m.global.hasField("SwrveGlobalCurrencyGiven")
@@ -133,10 +117,6 @@ function SwrveSDK() as Object
 		return SwrveGetStringFromPersistence("userID", "")
 	end function
 
-
-
-
-
 	prototype.SwrveSetCustomMessageRender = function(callback as String) as Void
 		if m.global.hasField("messageWillRender") AND m.global.hasField("swrveSDKHasCustomRenderer")
 	    	m.global.observeField("messageWillRender", callback)
@@ -144,21 +124,17 @@ function SwrveSDK() as Object
 	    end if
 	end function
 
-
 	prototype.SwrveGetResourceManager = function() as Object
 		return SwrveResourceManager(m.global.userResources)
 	end function
-
 
 	prototype.SwrveGetUserCampaigns = function() as Object
 		return m.global.userCampaigns
 	end function
 
-
 	prototype.SwrveGetUserQAStatus = function() as Boolean
 		return m.global.SwrveIsQAUser
 	end function
-
 
 	prototype.SwrveShutdown = function () as Void
 		if m.global.hasField("SwrveShutdown")
@@ -172,7 +148,6 @@ function SwrveSDK() as Object
     		m.global.swrveShowIAM = true
     	end if
 	end function
-
 
 	return prototype
 end function
