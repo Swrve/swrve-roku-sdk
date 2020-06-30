@@ -31,7 +31,7 @@ function AddSwrveUrlParametersToURL(urlString as String) as String
 	urlString += "&device_name=Roku" + device.GetModel().Trim()
 	urlString += "&os_version=" + device.GetVersion()
 	urlString += "&language=" + device.GetCurrentLocale()
-	urlString += "&orientation=both"
+	urlString += "&orientation=" + swrveConfig.orientation
 
 	return urlString
 end function

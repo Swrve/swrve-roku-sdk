@@ -9,7 +9,7 @@ function Swrve(config as Object)
     m.swrve_config = {
                         version: "7" 
                         userId: SWObject(config.userId).default(GetDefaultUserID())
-                        orientation: "Landscape"
+                        orientation: "landscape"
                         httpMaxRetries: 3
                         httpTimeBetweenRetries: 2
                         stack: SWObject(config.stack).default("")
