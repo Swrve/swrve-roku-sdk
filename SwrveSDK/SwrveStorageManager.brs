@@ -36,7 +36,7 @@ function SwrveGetQueueFromStorage() as Object
 		return eventsString
 	end if
 	return ParseJSON(eventsString)
-End function
+end function
 
 'Clear the queue that was saved to persistent storage'
 function SwrveClearQueueFromStorage()
@@ -45,7 +45,7 @@ function SwrveClearQueueFromStorage()
 end function
 
 function SwrveClearKeyFromStorage(key as String)
-	SwrveSaveStringToFile("", key)	
+	SwrveSaveStringToFile("", key)
 end function
 
 function SwrveClearKeyFromPersistence(key as String)
@@ -58,12 +58,12 @@ function SwrveSaveObjectToFile(obj as Object, filename as String) as Boolean
 	return success
 end function
 
-'Read object from tmp:/ storage' 
+'Read object from tmp:/ storage'
 function SwrveGetObjectFromFile(filename as String) as Object
 	val = ReadAsciiFile(filename)
 	if val = ""
 		return ""
-	else 		
+	else
 		return ParseJSON(val)
 	end if
 end function
@@ -75,7 +75,7 @@ function SwrveSaveStringToFile(str as String, filename as String) as Boolean
 	return success
 end function
 
-'Read string from tmp:/ storage' 
+'Read string from tmp:/ storage'
 function SwrveGetStringFromFile(filename as String) as String
 	return ReadAsciiFile(filename)
 end function
@@ -103,9 +103,10 @@ function SwrveIsResourceFileValid() as Boolean
 end function
 
 function SwrveClearWholePersistence()
-	ro = CreateObject("roRegistry")
-    for each section in ro.GetSectionList()
-        ro.delete(section)
-    end for
-    ro.flush()
+	' TODO: Update to only clear Swrve sections
+	' ro = CreateObject("roRegistry")
+	' for each section in ro.GetSectionList()
+	' 	ro.delete(section)
+	' end for
+	' ro.flush()
 end function

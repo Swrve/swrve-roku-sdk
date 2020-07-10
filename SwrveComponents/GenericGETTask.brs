@@ -1,48 +1,48 @@
 'Executed when the Transaction TaskNode is created
 function init()
-  m.top.functionName = "load"
+	m.top.functionName = "load"
 end function
 
 'Executed when the Task control status is set to "RUN"
 function load() as Object
-  if (m.top <> Invalid)
+	if (m.top <> Invalid)
 
-    request = m.top.request
+		request = m.top.request
 
-    req = CreateObject("roUrlTransfer")
-    port = CreateObject("roMessagePort")
-    ' Set up request port. Note this will fail if called from the render thread
-    req.SetPort(port)
-    ' Set request certificates
-    req.SetCertificatesFile("common:/certs/ca-bundle.crt")
-    req.InitClientCertificates()
-    req.AddHeader("Content-Type", "application/json")
-    req.SetURL(request.url)
+		req = CreateObject("roUrlTransfer")
+		port = CreateObject("roMessagePort")
+		' Set up request port. Note this will fail if called from the render thread
+		req.SetPort(port)
+		' Set request certificates
+		req.SetCertificatesFile("common:/certs/ca-bundle.crt")
+		req.InitClientCertificates()
+		req.AddHeader("Content-Type", "application/json")
+		req.SetURL(request.url)
 
-    requestSuccess = req.AsyncGetToString()
+		requestSuccess = req.AsyncGetToString()
 
-    msg = port.WaitMessage (30000)
+		msg = port.WaitMessage (30000)
 
-    ob = Invalid
+		ob = Invalid
 
-    if msg.GetResponseCode() = 200
-      data = ""
-      if msg.GetString() <> "" and msg.GetString() <> invalid
-        data = ParseJSON(msg.GetString())
-      end if
-      ob = {
-          Code: msg.GetResponseCode()
-          Data: data
-          Headers: msg.GetResponseHeaders()
-        }
-    else
-      ob = {
-          Code: msg.GetResponseCode()
-          Data: msg.GetFailureReason()
-        }
-    endif
+		if msg.GetResponseCode() = 200
+			data = ""
+			if msg.GetString() <> "" AND msg.GetString() <> Invalid
+				data = ParseJSON(msg.GetString())
+			end if
+			ob = {
+				Code: msg.GetResponseCode()
+				Data: data
+				Headers: msg.GetResponseHeaders()
+			}
+		else
+			ob = {
+				Code: msg.GetResponseCode()
+				Data: msg.GetFailureReason()
+			}
+		end if
 
-    m.top.response = ob
-    return ob
-  end if
+		m.top.response = ob
+		return ob
+	end if
 end function

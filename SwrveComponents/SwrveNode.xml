@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component name="SwrveNode" extends="Group">
-	   
+
 	<interface>
-        <field id="configuration" type="assocarray" />
-        <field id="startSwrve" type="boolean" alwaysNotify="true" />
-    </interface>
-    
+		<field id="configuration" type="assocarray" />
+		<field id="startSwrve" type="boolean" alwaysNotify="true" />
+	</interface>
+
 	<script type="text/brightscript" uri="pkg:/components/SwrveComponents/SwrveNode.brs" />
-	
+
 	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveSDK.brs" />
 
 	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveCampaigns.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveClient.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveDate.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveEvents.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveProduct.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveResourceManager.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveRestClient.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveReward.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveStorageManager.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveClient.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveDate.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveEvents.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveProduct.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveResourceManager.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveRestClient.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveReward.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveStorageManager.brs" />
+	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
 
 	<children>
-        <Timer id="refreshTimer" repeat="true" />
+		<Timer id="refreshTimer" repeat="true" />
 	</children>
 </component>

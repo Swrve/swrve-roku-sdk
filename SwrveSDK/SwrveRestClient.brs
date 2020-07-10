@@ -37,7 +37,7 @@ function AddSwrveUrlParametersToURL(urlString as String) as String
 end function
 
 
-function Identify(newId as String, observer as Dynamic) as object
+function Identify(newId as String, observer as Dynamic) as Object
 	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
@@ -47,17 +47,17 @@ function Identify(newId as String, observer as Dynamic) as object
 	payload.swrve_id = swrveConfig.userId
 	payload.external_user_id = newId
 	payload.unique_device_id = swrveConfig.uniqueDeviceId
-	
+
 	if swrveConfig.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
-	else 
+	else
 		GenericPOST(urlString, payload, observer)
 	end if
 
 	return Invalid
 end function
 
-function IdentifyWithUserID(userID as String, newId as String, observer as String) as object
+function IdentifyWithUserID(userID as String, newId as String, observer as String) as Object
 	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
@@ -67,10 +67,10 @@ function IdentifyWithUserID(userID as String, newId as String, observer as Strin
 	payload.swrve_id = userID
 	payload.external_user_id = newId
 	payload.unique_device_id = swrveConfig.uniqueDeviceId
-	
+
 	if swrveConfig.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
-	else 
+	else
 		GenericPOST(urlString, payload, observer)
 	end if
 
@@ -93,13 +93,13 @@ function GetUserResourcesAndCampaigns(observer as String) as Object
 	if swrveConfig.mockHTTPGETResponses = true
 		rtn = GenericGET(urlString, "")
 		return rtn
-	else 
+	else
 		GenericGET(urlString, observer)
 	end if
 
 	return Invalid
-	
-end Function
+
+end function
 
 'Downloads the diff and returns the raw object'
 function GetResourceDiff(observer as String) as Object
@@ -107,11 +107,11 @@ function GetResourceDiff(observer as String) as Object
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_RESOURCES_DIFF_URL
 	urlString = AddSwrveUrlParametersToURL(urlString)
-	
+
 	if swrveConfig.mockHTTPGETResponses = true
 		rtn = GenericGET(urlString, "")
 		return rtn
-	else 
+	else
 		GenericGET(urlString, observer)
 	end if
 
@@ -119,20 +119,20 @@ function GetResourceDiff(observer as String) as Object
 end function
 
 'Transform the diff into the right struct with old/new pairs'
-function SortResourceDiff(diff as Object) as object
+function SortResourceDiff(diff as Object) as Object
 	flatStructure = {}
-	if diff.code < 400 and diff.data <> invalid
+	if diff.code < 400 AND diff.data <> Invalid
 		old = {}
 		new = {}
 		for each resource in diff.data
 			oldValues = {}
 			newValues = {}
-			if resource.diff <> invalid
+			if resource.diff <> Invalid
 				for each key in resource.diff.keys()
-					if resource.diff[key]["old"] <> invalid
+					if resource.diff[key]["old"] <> Invalid
 						oldValues[key] = resource.diff[key]["old"]
 					end if
-					if resource.diff[key]["new"] <> invalid
+					if resource.diff[key]["new"] <> Invalid
 						newValues[key] = resource.diff[key]["new"]
 					end if
 				end for
@@ -142,10 +142,10 @@ function SortResourceDiff(diff as Object) as object
 		end for
 		flatStructure.old = old
 		flatStructure.new = new
-	end if 
-	
+	end if
+
 	return flatStructure
-end Function
+end function
 
 
 function SwrveGetResourcesDiff() as Object
@@ -154,10 +154,10 @@ function SwrveGetResourcesDiff() as Object
 end function
 
 function SwrveOnGetResourcesDiff(responseEvent as Dynamic) as Object
-	if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+	if(responseEvent <> Invalid AND type(responseEvent) = "roSGNodeEvent")
 		response = responseEvent.getData()
 		responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
-	else 
+	else
 		response = responseEvent
 	end if
 
@@ -169,14 +169,14 @@ end function
 
 'Loads from file user resources and campaigns'
 function GetMockedUserResourcesAndCampaigns(filename) as Object
-	obj = SwrveGetObjectFromFile(SwrveConstants().SWRVE_JSON_LOCATION + filename) 
-	if obj <> invalid and type(obj) <> "roString"
+	obj = SwrveGetObjectFromFile(SwrveConstants().SWRVE_JSON_LOCATION + filename)
+	if obj <> Invalid AND type(obj) <> "roString"
 		mockedResponse = {
 			code: 200
 			data: obj
 		}
 		return mockedResponse
-	else 
+	else
 		mockedResponse = {
 			code: 999
 			data: "Invalid or non existent file"
@@ -193,7 +193,7 @@ function SendBatchPOST(payload as Object, observer as Dynamic) as Object
 
 	if swrveConfig.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
-	else 
+	else
 		GenericPOST(urlString, payload, observer)
 	end if
 
@@ -206,9 +206,9 @@ function GenericPOST(url as String, data as Object, observer as Dynamic) as Obje
 
 	if swrveConfig.mockHTTPPOSTResponses = true
 		if(type(observer) = "String")
-			return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim()}
-		else 
-			return observer({ Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim()})
+			return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim() }
+		else
+			return observer({ Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim() })
 		end if
 	end if
 
@@ -216,8 +216,8 @@ function GenericPOST(url as String, data as Object, observer as Dynamic) as Obje
 	strData = FormatJson(data)
 
 	request = {
-		url:url.Trim(),
-		data:strData
+		url: url.Trim(),
+		data: strData
 	}
 
 	SWLogDebug("GenericPOST() Sending POST to:", url)
@@ -236,11 +236,11 @@ function GenericGET(url as String, observer as Dynamic) as Object
 	swrveConfig = m.swrve_config
 
 	if swrveConfig.mockHTTPGETResponses = true
-		return { Code: swrveConfig.mockedGETResponseCode, Data: {"user_resources" : {}, campaigns : {} }, requestUrl:url.Trim()}
+		return { Code: swrveConfig.mockedGETResponseCode, Data: { "user_resources": {}, campaigns: {} }, requestUrl: url.Trim() }
 	end if
 
 	request = {
-		url:url.Trim()
+		url: url.Trim()
 	}
 
 	SWLogDebug("GenericGET() to:", url)
@@ -252,12 +252,12 @@ function GenericGET(url as String, observer as Dynamic) as Object
 	m._getTask = _getTask
 
 	return Invalid
-end Function
+end function
 
 
 function DownloadAndStoreAssets(ids as Object) as Object
 	m._assetIds = []
-	
+
 	for each id in ids
 		m._assetIds.Push(id)
 	end for
@@ -268,7 +268,7 @@ function DownloadAndStoreAssets(ids as Object) as Object
 end function
 
 function _SwrveOnDownloadAndStoreImage(responseEvent)
-	if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+	if(responseEvent <> Invalid AND type(responseEvent) = "roSGNodeEvent")
 		response = responseEvent.getData()
 	end if
 	responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
@@ -298,10 +298,10 @@ function DownloadAndStoreImage(id as String) as Object
 
 
 	request = {
-		id:id,
-		url:url.Trim(),
-		localUrl:localUrl,
-		assetLocation:SwrveConstants().SWRVE_ASSETS_LOCATION
+		id: id,
+		url: url.Trim(),
+		localUrl: localUrl,
+		assetLocation: SwrveConstants().SWRVE_ASSETS_LOCATION
 	}
 
 	_getTask = createObject("roSGNode", "DownloadAndStoreImageTask")

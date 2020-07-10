@@ -5,7 +5,7 @@ function SwrveSDK() as Object
 	prototype.SwrveSetIdentifyExternalIDCallback = function(callback as String) as Void
 		if m.global.hasField("SwrveGlobalIdentifyExternalIDCallback")
 			m.global.observeField("SwrveGlobalIdentifyExternalIDCallback", callback)
-		end if 
+		end if
 	end function
 
 	prototype.SwrveIdentifyExternalID = function(external_user_id as String) as Void
@@ -14,19 +14,19 @@ function SwrveSDK() as Object
 		end if
 	end function
 
-	prototype.SwrveClearIdentifyExternalIDCallback = function ()
+	prototype.SwrveClearIdentifyExternalIDCallback = function()
 		if m.global.hasField("SwrveGlobalIdentifyExternalIDCallback")
 			m.global.unobserveField("SwrveGlobalIdentifyExternalIDCallback")
 		end if
 	end function
-	
-	prototype.SwrveEvent = function (eventName as String, payload = {} as Object) as Void
+
+	prototype.SwrveEvent = function(eventName as String, payload = {} as Object) as Void
 		if m.global.hasField("SwrveEvent")
-			m.global.SwrveEvent = {eventName:eventName, payload:payload}
+			m.global.SwrveEvent = { eventName: eventName, payload: payload }
 		end if
 	end function
 
-	prototype.SwrveSetCustomCallback = function (callback as String) as Void
+	prototype.SwrveSetCustomCallback = function(callback as String) as Void
 		if m.global.hasField("SwrveCustomCallback")
 			m.global.observeField("SwrveCustomCallback", callback)
 		end if
@@ -40,13 +40,13 @@ function SwrveSDK() as Object
 
 	prototype.SwrveClickEvent = function(message as Object, buttonName as String) as Void
 		if m.global.hasField("SwrveClickEvent")
-			m.global.SwrveClickEvent = {message:message, buttonname:buttonName}
+			m.global.SwrveClickEvent = { message: message, buttonname: buttonName }
 		end if
 	end function
 
 	prototype.SwrvePurchaseEvent = function(itemQuantity as Integer, itemName as String, itemPrice as Float, itemCurrency as String) as Void
 		if m.global.hasField("SwrvePurchaseEvent")
-			m.global.SwrvePurchaseEvent = {itemQuantity:itemQuantity, itemName:itemName, itemPrice:itemPrice, itemCurrency:itemCurrency}
+			m.global.SwrvePurchaseEvent = { itemQuantity: itemQuantity, itemName: itemName, itemPrice: itemPrice, itemCurrency: itemCurrency }
 		end if
 	end function
 
@@ -56,19 +56,19 @@ function SwrveSDK() as Object
 		end if
 	end function
 
-	prototype.SwrveImpressionEvent = function (message as Object) as Void
+	prototype.SwrveImpressionEvent = function(message as Object) as Void
 		if m.global.hasField("SwrveImpressionEvent")
 			m.global.SwrveImpressionEvent = message
 		end if
 	end function
 
-	prototype.SwrveSetNewResourcesCallback = function (callback as String) as Void
+	prototype.SwrveSetNewResourcesCallback = function(callback as String) as Void
 		if m.global.hasField("swrveResourcesAndCampaigns")
 			m.global.observeField("swrveResourcesAndCampaigns", callback)
 		end if
 	end function
 
-	prototype.SwrveClearNewResourcesCallback = function () as Void
+	prototype.SwrveClearNewResourcesCallback = function() as Void
 		if m.global.hasField("swrveResourcesAndCampaigns")
 			m.global.unobserveField("swrveResourcesAndCampaigns")
 		end if
@@ -91,19 +91,19 @@ function SwrveSDK() as Object
 
 	prototype.SwrveCurrencyGiven = function(givenCurrency as String, givenAmount as Integer) as Void
 		if m.global.hasField("SwrveGlobalCurrencyGiven")
-			m.global.SwrveGlobalCurrencyGiven = {givenCurrency:givenCurrency, givenAmount:givenAmount}
+			m.global.SwrveGlobalCurrencyGiven = { givenCurrency: givenCurrency, givenAmount: givenAmount }
 		end if
 	end function
 
 	prototype.SwrveUserUpdateWithDate = function(name as String, date as Object) as Void
 		if m.global.hasField("SwrveGlobalUserUpdateWithDate")
-			m.global.SwrveGlobalUserUpdateWithDate = {name:name, date:date}
+			m.global.SwrveGlobalUserUpdateWithDate = { name: name, date: date }
 		end if
 	end function
 
 	prototype.SwrveIAPWithoutReceipt = function(product as Object, rewards as Object, currency as String) as Void
 		if m.global.hasField("SwrveGlobalIAPWithoutReceipt")
-			m.global.SwrveGlobalIAPWithoutReceipt = {product:product, rewards:rewards, currency:currency}
+			m.global.SwrveGlobalIAPWithoutReceipt = { product: product, rewards: rewards, currency: currency }
 		end if
 	end function
 
@@ -119,9 +119,9 @@ function SwrveSDK() as Object
 
 	prototype.SwrveSetCustomMessageRender = function(callback as String) as Void
 		if m.global.hasField("messageWillRender") AND m.global.hasField("swrveSDKHasCustomRenderer")
-	    	m.global.observeField("messageWillRender", callback)
-	    	m.global.swrveSDKHasCustomRenderer = true
-	    end if
+			m.global.observeField("messageWillRender", callback)
+			m.global.swrveSDKHasCustomRenderer = true
+		end if
 	end function
 
 	prototype.SwrveGetResourceManager = function() as Object
@@ -136,17 +136,17 @@ function SwrveSDK() as Object
 		return m.global.SwrveIsQAUser
 	end function
 
-	prototype.SwrveShutdown = function () as Void
+	prototype.SwrveShutdown = function() as Void
 		if m.global.hasField("SwrveShutdown")
 			m.global.SwrveShutdown = true
 		end if
 	end function
 
-	prototype.SwrveShowIAM = function (message as Object) as Void
+	prototype.SwrveShowIAM = function(message as Object) as Void
 		if m.global.hasField("swrveCurrentIAM") AND m.global.hasField("swrveShowIAM")
 			m.global.swrveCurrentIAM = message
-    		m.global.swrveShowIAM = true
-    	end if
+			m.global.swrveShowIAM = true
+		end if
 	end function
 
 	return prototype

@@ -1,26 +1,26 @@
 'Executed when the Transaction TaskNode is created
 function init()
-  m.top.functionName = "execute"
+	m.top.functionName = "execute"
 end function
 
 'Executed when the Task control status is set to "RUN"
 function execute()
-  if (m.top <> Invalid)
+	if (m.top <> Invalid)
 
-    request = m.top.request
+		request = m.top.request
 
-    allFilesExist = true
-    for each id in request.ids
-      localUrl = request.assetLocation + id
-      if NOT SWCheckForFile(localUrl) then
-        allFilesExist = false
-      end if
+		allFilesExist = true
+		for each id in request.ids
+			localUrl = request.assetLocation + id
+			if NOT SWCheckForFile(localUrl) then
+				allFilesExist = false
+			end if
 
-      if(NOT allFilesExist) exit for
-    end for
+			if(NOT allFilesExist) exit for
+		end for
 
-    m.top.response = {allFilesExist:allFilesExist}
-    return {allFilesExist:allFilesExist}
+		m.top.response = { allFilesExist: allFilesExist }
+		return { allFilesExist: allFilesExist }
 
-  end if
+	end if
 end function
