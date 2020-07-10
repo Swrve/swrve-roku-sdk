@@ -283,15 +283,45 @@ end function
 
 '------------- Duplicated from Swrve Client for Render Thread ------------'
 ' Read from persistence'
-function SwrveUtilGetSessionStartDateAsReadable() as String
-  dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_START_SESSION_DATE_KEY, "")
-  return dateString
+function SwrveGetObjectFromPersistence(source as String, default = "" as Dynamic) As Object
+    sec = CreateObject("roRegistrySection", source)
+    if sec.Exists(source)
+    	val = sec.Read(source)
+    	if val = invalid or val = ""
+    		return default
+    	else
+        	return ParseJSON(val)
+        end if
+    end if
+    return default
 end function
 
-function SwrveUtilGetCurrentUserID() as String
-  dateString = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_USER_ID_KEY, "")
-  return dateString
+'Save to registry (persistent storage, do not use for large files)'
+Sub SwrveSaveObjectToPersistence(destination As String, value As Object)
+    sec = CreateObject("roRegistrySection", destination)
+    str = ""
+    if value <> invalid
+    	str = FormatJson(value)
+    end if
+    sec.Write(destination, str)
+    sec.Flush()
+End Sub
+
+' Read from persistence'
+function SwrveGetStringFromPersistence(source as String, default = "" as Dynamic) As String
+    sec = CreateObject("roRegistrySection", source)
+    if sec.Exists(source)
+        return sec.Read(source)
+    end if
+    return default
 end function
+
+'Save to registry (persistent storage, do not use for large files)'
+Sub SwrveSaveStringToPersistence(destination As String, value As String)
+    sec = CreateObject("roRegistrySection", destination)
+    sec.Write(destination, value)
+    sec.Flush()
+End Sub
 
 '------------- Date Utils --------------'
 function SwrvePrintLoadingTimeFromAppLaunch(msg as String) as Void
