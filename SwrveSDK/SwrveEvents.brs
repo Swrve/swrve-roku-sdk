@@ -1,6 +1,6 @@
 ' Named event creation & queue'
 function SwrveEvent(eventName as String, payload = {} as Object) as void
-	SWLog("SwrveEvent() eventName:" + eventName)
+	SWLogDebug("SwrveEvent() eventName:", eventName)
    	event = SwrveCreateEvent(eventName, payload)
    	if SwrveIsEventValid(event)
    		SwrveCheckEventForTriggers(event)
@@ -245,7 +245,7 @@ function SwrveCreateIAPWithoutReceipt(product as Object, rewards as Object, curr
 	this = {}
     	
     if product.product_id = invalid
-    	SWLog("Product ID mustn't be nil")
+    	SWLogError("Product ID mustn't be nil")
     	return this
     end if	
   
@@ -319,7 +319,7 @@ function SwrveAddEventToQAQueue(event as Object) as void
 		m.eventsSentOrQueuedRecently = true		
 		m.eventsQAQueue.push(event)
 		if m.eventsQAQueue.Count() > m.swrve_config.queueMaxSize
-		SWLog("Event QA queue is too large. Sending events now to backend and flushing buffer")
+		SWLogError("Event QA queue is too large. Sending events now to backend and flushing buffer")
 		SwrvePostQAQueueAndFlush()
 		end if
 	end if
@@ -328,7 +328,7 @@ end function
 'Will check the queue size compared to max size, and flush if we get over'
 function SwrveCheckQueueSize() as void
 	if SwrveQueueSize() > m.swrve_config.queueMaxSize
-		SWLog("Event queue is too large. Sending events now to backend and flushing buffer")
+		SWLogError("Event queue is too large. Sending events now to backend and flushing buffer")
 		SwrveFlushAndClean()
 	end if
 end function
@@ -396,16 +396,16 @@ function SwrveIsEventValid(event as Object) as boolean
 		' if nameShortEnough = false
 		' 	message = message + "Event name is too long"
 		' end if
-		SWLog(message)
+		SWLogError(message)
 	end if
 end Function
 
 ' Post the batch json to the batch endpoint. On success flush the queue, on failure, we'll see when we start caching
 function SwrvePostQueueAndFlush() as Object
 	payload = SwrveBuildBatchFromQueue()
-	SWLog("SwrvePostQueueAndFlush - Preparing request. ")
+	SWLogDebug("SwrvePostQueueAndFlush - Preparing request. ")
 	if(payload <> invalid AND payload.data <> invalid)
-		SWLog("SwrvePostQueueAndFlush - Items in batch que = " + payload.data.count().ToStr())
+		SWLogInfo("SwrvePostQueueAndFlush - Items in batch que = ", payload.data.count())
 	end if
 
 	if payload <> invalid and payload.data.count() > 0
@@ -429,11 +429,11 @@ function SwrveOnPostQueueAndFlush(responseEvent = {} as Dynamic) as Object
 	
 	if response <> invalid
 		if response.Code < 400 'Success or redirection: Events have gone through'
-			SWLog("Success sending events to Swrve")
+			SWLogDebug("Success sending events to Swrve")
 		else if response.code < 500 'Failure, Client error, will not retry'
-			SWLog("HTTP Error - not adding events back into the queue : " + response.data)
+			SWLogError("HTTP Error - not adding events back into the queue :", response.data)
 		else if response.code >= 500 'Failure, Server error, will retry'
-			SWLog("Error sending event data to Swrve (" + response.data + ") Adding data back onto unsent message buffer")
+			SWLogError("Error sending event data to Swrve (", response.data, ") Adding data back onto unsent message buffer")
 		    SaveQueueToPersistence()
 		end if
 		SwrveFlushQueue()
@@ -457,9 +457,9 @@ end function
 
 function SwrvePostQAQueueAndFlush() as Object
 	payload = SwrveBuildBatchFromQAQueue()
-	SWLog("SwrvePostQAQueueAndFlush - Preparing request. ")
+	SWLogDebug("SwrvePostQAQueueAndFlush - Preparing request. ")
 	if(payload <> invalid AND payload.data <> invalid)
-		SWLog("SwrvePostQAQueueAndFlush - Items in batch QA que = " + payload.data.count().ToStr())
+		SWLogDebug("SwrvePostQAQueueAndFlush - Items in batch QA que = ", payload.data.count())
 	end if
 
 	if payload <> invalid and payload.data.count() > 0 

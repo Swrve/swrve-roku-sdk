@@ -15,7 +15,6 @@
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveDate.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveEvents.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveObject.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveProduct.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveResourceManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveRestClient.brs" />

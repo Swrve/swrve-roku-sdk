@@ -1,24 +1,65 @@
 ' Used in the main thread and in the Render thread. 
 
-'Util function to log strings'
-function SWLog(msg as String)
-	if GetGlobalAA().global.SwrveDebug
-		print "[SwrveSDK] " + msg
-	end if
-end function
+'lig statements under the VERBOSE label and log level'
+sub SWLogVerbose(param1 as Dynamic, param2 = "nil", param3 = "nil", param4 = "nil", param5 = "nil", param6 = "nil", param7 = "nil", param8 = "nil", param9 = "nil", param10 = "nil")
+  SWLogAny([param1, param2, param3, param4, param5, param6, param7, param8, param9, param10], 5)
+end sub
 
-'Util function to log ints'
-function SWLogI(msg as Integer)
-	if GetGlobalAA().global.SwrveDebug
-		print "[SwrveSDK] " + StrI(msg)
-	end if
-end function
+'lig statements under the DEBUG label and log level'
+sub SWLogDebug(param1 as Dynamic, param2 = "nil", param3 = "nil", param4 = "nil", param5 = "nil", param6 = "nil", param7 = "nil", param8 = "nil", param9 = "nil", param10 = "nil")
+  SWLogAny([param1, param2, param3, param4, param5, param6, param7, param8, param9, param10], 4)
+end sub
 
-'Util function to log floats'
-function SWLogF(msg as Float)
-	if GetGlobalAA().global.SwrveDebug
-		print "[SwrveSDK] " + Str(msg)
+'lig statements under the INFO label and log level'
+sub SWLogInfo(param1 as Dynamic, param2 = "nil", param3 = "nil", param4 = "nil", param5 = "nil", param6 = "nil", param7 = "nil", param8 = "nil", param9 = "nil", param10 = "nil")
+  SWLogAny([param1, param2, param3, param4, param5, param6, param7, param8, param9, param10], 3)
+end sub
+
+'lig statements under the WARN label and log level'
+sub SWLogWarn(param1 as Dynamic, param2 = "nil", param3 = "nil", param4 = "nil", param5 = "nil", param6 = "nil", param7 = "nil", param8 = "nil", param9 = "nil", param10 = "nil")
+  SWLogAny([param1, param2, param3, param4, param5, param6, param7, param8, param9, param10], 2)
+end sub
+
+'lig statements under the ERROR label and log level'
+sub SWLogError(param1 as Dynamic, param2 = "nil", param3 = "nil", param4 = "nil", param5 = "nil", param6 = "nil", param7 = "nil", param8 = "nil", param9 = "nil", param10 = "nil")
+  SWLogAny([param1, param2, param3, param4, param5, param6, param7, param8, param9, param10], 1)
+end sub
+
+'lig statements under the INFO label and log level'
+sub SWLogAny(paramArr as Object, level as Integer)
+  if NOT createObject("roAppInfo").IsDev() then return
+  logLevel = GetGlobalAA().global.SwrveLogLevel
+  if logLevel < level then return
+
+  filtered = []
+  for each item in paramArr
+    if NOT (SWIsString(item) AND item = "nil") then filtered.push(item)
+  end for
+
+  if level = 1 then
+    levelInfo = "ERROR]"
+  else if level = 2 then
+    levelInfo = "WARN]"
+  else if level = 3 then
+    levelInfo = "INFO]"
+  else if level = 4 then
+    levelInfo = "DEBUG]"
+  else
+    levelInfo = "VERBOSE]"
 	end if
+
+  logStr = mid(createObject("roDateTime").toISOString(), 12, 5) + " | [Swrve-" + levelInfo
+
+  print logStr; tab(23); " | ";
+  for each item in filtered
+    print item; " ";
+  end for
+  print ""
+end sub
+
+function SWIsString(value as Dynamic) as Boolean
+	valueType = type(value)
+	return (valueType = "String") OR (valueType = "roString")
 end function
 
 'Safely returns the user resources from the dictionary'
@@ -213,6 +254,11 @@ function SWSplitFileFromPath(path as String) as Object
     return parts
 end function
 
+'Returns 'value' if set or 'defaultValue' if not set.
+function SWGetValue(value as Dynamic, defaultValue as Dynamic) as Dynamic
+  if value <> invalid then return value else return defaultValue
+end function
+
 'Util function depending on resolution, return supported width and height'
 function SWGetSupportedResolution()
 
@@ -281,7 +327,7 @@ function SwrvePrintLoadingTimeFromTimestamp(msg as String, time as Object) as Vo
 end function
 
 function SwrvePrintMsg(msg)
-  SWLog("--- [BENCHMARKING] --- " + msg)
+  SWLogInfo("--- [BENCHMARKING] --- ", msg)
 end function
 
 function SwrveGetTimestamp() as Object

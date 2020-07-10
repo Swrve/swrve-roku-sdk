@@ -127,7 +127,7 @@ function SwrveIsCampaignFileValid() as Boolean
 	if persistentSignature = SwrveMd5(persistentCampaign)
 		return true
 	else
-		SWLog("Campaign file has been compromised. Reloading.")
+		SWLogWarn("Campaign file has been compromised. Reloading.")
 		return false
 	end if
 end function
@@ -138,7 +138,7 @@ function SwrveIsResourceFileValid() as Boolean
 	if persistentSignature = SwrveMd5(persistentResource)
 		return true
 	else
-		SWLog("Resource file has been compromised. Reloading.")
+		SWLogWarn("Resource file has been compromised. Reloading.")
 		return false
 	end if
 end function

@@ -220,7 +220,7 @@ function GenericPOST(url as String, data as Object, observer as Dynamic) as Obje
 		data:strData
 	}
 
-	SWLog("GenericPOST() Sending POST to " + url)
+	SWLogDebug("GenericPOST() Sending POST to:", url)
 
 	_postTask = CreateObject("roSGNode", "GenericPOSTTask")
 	_postTask.request = request
@@ -243,7 +243,7 @@ function GenericGET(url as String, observer as Dynamic) as Object
 		url:url.Trim()
 	}
 
-	SWLog("GenericGET() to " + url)
+	SWLogDebug("GenericGET() to:", url)
 
 	_getTask = createObject("roSGNode", "GenericGETTask")
 	_getTask.request = request
@@ -293,7 +293,7 @@ function DownloadAndStoreImage(id as String) as Object
 	cdn = m.userCampaigns.cdn_root
 
 	url = cdn + id
-	SWLog("Downloading " + url)
+	SWLogInfo("Downloading:", url)
 	localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
 
 

@@ -106,14 +106,14 @@ function buttonSelected()
 
     actionType = m.buttonsJSON[m.currentButtonIndex].type
     if actionType.value = m._swrveConstants.SWRVE_BUTTON_DISMISS
-        SWLog("User pressed on button with dismiss action: No Callback triggered")
+        SWLogInfo("User pressed on button with dismiss action: No Callback triggered")
     else if actionType.value = m._swrveConstants.SWRVE_BUTTON_CUSTOM
 
         action = m.buttonsJSON[m.currentButtonIndex].action.value
 
         SwrveSDK().SwrveClickEvent(m.top.iam, m.buttonsJSON[m.currentButtonIndex].name)
 
-        SWLog("User pressed on button with custom action: " + action + " type: " + type(action))
+        SWLogInfo("User pressed on button with custom action:", action, "type:", type(action))
         m.global.SwrveCustomCallback = action
     end if
 

@@ -86,9 +86,9 @@ function SwrveCheckEventForTriggers(event as object)
 	validCampaigns = SwrveBuildArrayOfComplyingCampaigns(event)
 
 	if validCampaigns.count() = 0
-		SWLog("No campaigns matched the event named "+ event.name)
+		SWLogWarn("No campaigns matched the event named:", event.name)
 	else
-		SWLog(StrI(validCampaigns.count()) + " campaigns matched the event named " + event.name + ". Sorting them out by priority and checking display rules.")
+		SWLogInfo(validCampaigns.count(), "campaigns matched the event named:", event.name, "- Sorting them out by priority and checking display rules.")
 		'check that assets have all been downloaded.'
 		campaignsReady = []
 		for each campaign in validCampaigns
@@ -98,7 +98,7 @@ function SwrveCheckEventForTriggers(event as object)
 		end for
 
 		if campaignsReady.count() > 0
-			SWLog("Assets are ready.")
+			SWLogDebug("Assets are ready.")
 			sortedCampaigns = SwrveSortCampaignsByPriority(campaignsReady)
 			for each campaign in sortedCampaigns
 				_canShowCampaign = SwrveCanShowCampaign(campaign)
@@ -113,7 +113,7 @@ function SwrveCheckEventForTriggers(event as object)
 				end if
 			end for
 		else
-			SWLog("Abort. Assets are not ready or missing.")
+			SWLogWarn("Abort. Assets are not ready or missing.")
 		end if
 	end if
 end function
@@ -134,7 +134,7 @@ function SwrveProcessShowIAM(campaign as Object)
 end function
 
 function SwrveRenderIAM(message as Object)
-	SWLog("Showing IAM - " + StrI(message.id)) 
+	SWLogInfo("Showing IAM -", message.id)
 	m.global.swrveCurrentIAM = message
 	m.global.swrveShowIAM = true
 end function
@@ -182,13 +182,13 @@ function SwrveCanShowCampaignAccordingToGlobalRules(campaign as Object) as Boole
 	'and if we're too early or not to show the message.
 	if now - sessionStart < delay_first_message
 		'Too soon'
-		SWLog("{Campaign throttle limit} Too soon after launch.")
+		SWLogError("{Campaign throttle limit} Too soon after launch. Session length:", now - sessionStart, "Required first delay:", delay_first_message)
 		return false
 	end if
 
 	'Checking that we don't go over the max number of impressions
 	if m.numberOfMessagesShown >= max_messages_per_session
-		SWLog("{Campaign throttle limit} Campaign has been shown too many times already")
+		SWLogError("{Campaign throttle limit} Campaign has been shown too many times already:", m.numberOfMessagesShown, "Max:", max_messages_per_session)
 		return false
 	end if
 
@@ -203,7 +203,7 @@ function SwrveCanShowCampaignAccordingToGlobalRules(campaign as Object) as Boole
         lastMessageTimeAsSeconds = date.AsSeconds()
 
         if now - lastMessageTimeAsSeconds < min_delay_between_messages
-       		SWLog("{Campaign throttle limit} Too soon after last message.")
+       		SWLogError("{Campaign throttle limit} Too soon after last message. Time since last message:", now - lastMessageTimeAsSeconds, "Required delay:", min_delay_between_messages)
         	return false
         else
         	return true
@@ -224,12 +224,12 @@ function SwrveCanShowCampaign(campaign as Object) as Boolean
 
 	'Checking if the campaign wants the first message to be delayed, and if we're too early to show the message.
 	if now - sessionStart < delay_first_message			
-		SWLog("{Campaign throttle limit} Too soon after launch.")
-		'print "{Campaign throttle limit} now:"; now
-		'print "{Campaign throttle limit} sessionStart:"; sessionStart
-		'print "{Campaign throttle limit} delay_first_message seconds:"; delay_first_message
-		'print "{Campaign throttle limit} (seconds) now - sessionStart = "; now - sessionStart
-		'print "{Campaign throttle limit} campaign.rules:"; campaign.rules
+		SWLogError("{Campaign throttle limit} Too soon after launch. Session length:", now - sessionStart, "Required first delay:", delay_first_message)
+		SWLogVerbose("now:", now)
+		SWLogVerbose("sessionStart:", sessionStart)
+		SWLogVerbose("delay_first_message seconds:", delay_first_message)
+		SWLogVerbose("(seconds) now - sessionStart =", now - sessionStart)
+		SWLogVerbose("campaign.rules:", campaign.rules)
 		return false
 	end if
 
@@ -240,7 +240,7 @@ function SwrveCanShowCampaign(campaign as Object) as Boolean
 	if impressionsStr <> ""
 		impressions = impressionsStr.toInt()
 		if impressions >= max_impressions ' We're over the max, cant show it.
-			SWLog("{Campaign throttle limit} Campaign has been shown too many times already")
+			SWLogError("{Campaign throttle limit} Campaign has been shown too many times already:", impressions, "Max:", max_impressions)
 			return false
 		end if
 	end if
@@ -257,7 +257,7 @@ function SwrveCanShowCampaign(campaign as Object) as Boolean
         'Checking if delay between last message shown and now is greater than allowed delay'
         if now - lastMessageTimeAsSeconds < min_delay_between_messages
         	'Too soon, return false
-        	SWLog("{Campaign throttle limit} Too soon after last message.")
+        	SWLogError("{Campaign throttle limit} Too soon after last message. Time since last message:", now - lastMessageTimeAsSeconds, "Required delay:", min_delay_between_messages)
         	return false
         else
         	'Passed all test'
