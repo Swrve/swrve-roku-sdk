@@ -8,11 +8,9 @@ function load() as Object
   if (m.top <> Invalid)
 
     request = m.top.request
-
-    filesystem = CreateObject("roFilesystem")
-    if not filesystem.Exists(request.assetLocation)
-      filesystem.CreateDirectory(request.assetLocation)
-    end if    
+    if NOT SWCheckForFile(request.assetLocation)
+      CreateDirectory(request.assetLocation)
+    end if
 
     req = CreateObject("roUrlTransfer")
     port = CreateObject("roMessagePort")
@@ -23,7 +21,7 @@ function load() as Object
     req.InitClientCertificates()
     req.AddHeader("Content-Type", "application/json")
     req.SetURL(request.url)
-    
+
     requestSuccess = req.AsyncGetToFile(request.localUrl.Trim())
 
     msg = Wait(30000, port)

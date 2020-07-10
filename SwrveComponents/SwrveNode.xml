@@ -1,8 +1,9 @@
-<?xml version="1.0" encoding="utf-8" ?> 
-<component name="SwrveNode" extends="Group" xsi:noNamespaceSchemaLocation="https://devtools.web.roku.com/schema/RokuSceneGraph.xsd" >
+<?xml version="1.0" encoding="utf-8"?>
+<component name="SwrveNode" extends="Group">
 	   
 	<interface>
-        <field id="startSwrve" type="boolean" alwaysNotify="true"/>
+        <field id="configuration" type="assocarray" />
+        <field id="startSwrve" type="boolean" alwaysNotify="true" />
     </interface>
     
 	<script type="text/brightscript" uri="pkg:/components/SwrveComponents/SwrveNode.brs" />
@@ -23,6 +24,6 @@
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
 
 	<children>
-		<Timer id="refreshTimer" repeat="true"/>
+        <Timer id="refreshTimer" repeat="true" />
 	</children>
 </component>

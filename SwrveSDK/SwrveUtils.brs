@@ -187,7 +187,33 @@ function SwrveCopy(obj as Object) as Object
 	return res
 end function
 
-'Util function depnding on resolution, return supported width and height'
+'Util function for checking to see if the file(or folder) exists'
+function SWCheckForFile(path as String) as Boolean
+  pathParts = SWSplitFileFromPath(path)
+	items = ListDir(pathParts[0]).toArray()
+	for each item in items
+		if item = pathParts[1] OR item = pathParts[1] + ".tmp" then
+			return true
+		end if
+	end for
+	return false
+end function
+
+'Util function for getting the last folder or file nice from a uri path.'
+'Returns an array with index 0 is the path before the file/folder and index 1 is the file or folder name'
+function SWSplitFileFromPath(path as String) as Object
+    pathParts = path.tokenize("/").toArray()
+    parts = ["", ""]
+
+    if pathParts.count() >= 2 then
+      parts[1] = pathParts.pop()
+      parts[0] = pathParts.join("/") + "/"
+    end if
+
+    return parts
+end function
+
+'Util function depending on resolution, return supported width and height'
 function SWGetSupportedResolution()
 
 	supportedWidth =  SwrveConstants().SWRVE_FHD_WIDTH

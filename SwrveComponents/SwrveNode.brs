@@ -3,11 +3,19 @@ function init()
 
     cfg = {
         appId: "<Your ID>", 
-        apikey: "<Your Key>", 
-        debug: true 'Used for debug logs'
+        apiKey: "<Your Key>",
     }
 
+    if cfg.appId.Instr("Your ID") = -1 AND cfg.apiKey.Instr("Your Key") = -1 then
     Swrve(cfg)
+    else
+        m.top.observeField("configuration", "onConfiguration")
+    end if
+end function
+
+function onConfiguration(event as Object)
+    m.top.unobserveField(event.getField())
+    Swrve(event.getData())
 end function
 
 function onStartSwrve()

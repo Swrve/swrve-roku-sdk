@@ -12,9 +12,7 @@ function execute()
     allFilesExist = true
     for each id in request.ids
       localUrl = request.assetLocation + id
-      filesystem = CreateObject("roFilesystem")
-      fileExists = filesystem.Exists(localUrl)
-      if not fileExists
+      if NOT SWCheckForFile(localUrl) then
         allFilesExist = false
       end if
 
