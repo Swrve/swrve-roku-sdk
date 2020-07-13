@@ -14,7 +14,6 @@ end function
 function AddSwrveUrlParametersToURL(urlString as String) as String
 	swrveConfig = m.swrve_config
 	swrveJoinedDateEpochMilli = SwrveDateFromString(checkOrWriteJoinedDate()).toMillisToken()
-	appInfo = CreateObject("roAppInfo")
 	device = CreateObject("roDeviceInfo")
 
 	urlString += "?"
@@ -25,7 +24,7 @@ function AddSwrveUrlParametersToURL(urlString as String) as String
 	urlString += "&appId=" + swrveConfig.appId
 	urlString += "&user=" + swrveConfig.userId
 	urlString += "&app_store=roku"
-	urlString += "&app_version=" + appInfo.GetVersion()
+	urlString += "&app_version=" + swrveConfig.appVersion
 	urlString += "&version=" + swrveConfig.version
 	urlString += "&conversation_version=4" 'hardcoded to get the new CDN paths'
 	urlString += "&device_name=Roku" + device.GetModel().Trim()
@@ -148,12 +147,12 @@ function SortResourceDiff(diff as Object) as Object
 end function
 
 
-function SwrveGetResourcesDiff() as Object
-	rawDiff = GetResourceDiff("SwrveOnGetResourcesDiff")
+function SwrveOnGetResourcesDiff() as Object
+	rawDiff = GetResourceDiff("SwrveOnGetResourcesDiffResponse")
 	return rawDiff
 end function
 
-function SwrveOnGetResourcesDiff(responseEvent as Dynamic) as Object
+function SwrveOnGetResourcesDiffResponse(responseEvent as Dynamic) as Object
 	if(responseEvent <> Invalid AND type(responseEvent) = "roSGNodeEvent")
 		response = responseEvent.getData()
 		responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
@@ -162,7 +161,7 @@ function SwrveOnGetResourcesDiff(responseEvent as Dynamic) as Object
 	end if
 
 	sorted = SortResourceDiff(response)
-	m.global.SwrveResourcesDiffObjectReady = sorted
+	getSwrveNode().resourcesDiffObjectReady = sorted
 	return sorted
 end function
 

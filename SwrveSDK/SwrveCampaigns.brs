@@ -86,7 +86,7 @@ function SwrveCheckEventForTriggers(event as Object)
 	validCampaigns = SwrveBuildArrayOfComplyingCampaigns(event)
 
 	if validCampaigns.count() = 0
-		SWLogWarn("No campaigns matched the event named:", event.name)
+		SWLogDebug("No campaigns matched the event named:", event.name)
 	else
 		SWLogInfo(validCampaigns.count(), "campaigns matched the event named:", event.name, "- Sorting them out by priority and checking display rules.")
 		'check that assets have all been downloaded.'
@@ -121,8 +121,8 @@ end function
 function SwrveProcessShowIAM(campaign as Object)
 	messageToShow = SwrvePriorityMessage(campaign)
 
-	if m.global.swrveSDKHasCustomRenderer = true
-		m.global.messageWillRender = messageToShow
+	if getSwrveNode().sdkHasCustomRenderer = true
+		getSwrveNode().messageWillRender = messageToShow
 	else
 		SwrveRenderIAM(messageToShow)
 	end if
@@ -135,8 +135,8 @@ end function
 
 function SwrveRenderIAM(message as Object)
 	SWLogInfo("Showing IAM -", message.id)
-	m.global.swrveCurrentIAM = message
-	m.global.swrveShowIAM = true
+	getSwrveNode().currentIAM = message
+	getSwrveNode().showIAM = true
 end function
 
 function SwrveUpdateGlobalRules()

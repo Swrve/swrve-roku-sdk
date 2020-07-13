@@ -4,6 +4,35 @@
 	<interface>
 		<field id="configuration" type="assocarray" />
 		<field id="startSwrve" type="boolean" alwaysNotify="true" />
+
+		<field id="startSeconds" type="integer" alwaysNotify="false" />
+		<field id="startMilli" type="integer" alwaysNotify="false" />
+		<field id="appStartSecondsDesc" type="integer" alwaysNotify="false" />
+		<field id="showIAM" type="boolean" alwaysNotify="true" />
+		<field id="currentIAM" type="assocarray" alwaysNotify="true" />
+		<field id="resourcesDiffObjectReady" type="assocarray" alwaysNotify="true" />
+		<field id="shutdown" type="boolean" alwaysNotify="true" />
+		<field id="assetsReady" type="boolean" alwaysNotify="true" />
+		<field id="resourcesAndCampaigns" type="boolean" value="false" alwaysNotify="true" />
+		<field id="messageWillRender" type="assocarray" value="{}" alwaysNotify="true" />
+		<field id="customCallback" type="string" alwaysNotify="true" />
+		<field id="event" type="assocarray" alwaysNotify="true" />
+		<field id="globalIdentifyExternalIDCallback" type="assocarray" value="{}" alwaysNotify="true" />
+		<field id="globalIdentifyExternalID" type="string" alwaysNotify="true" />
+		<field id="isQAUser" type="boolean" alwaysNotify="true" />
+		<field id="clickEvent" type="assocarray" alwaysNotify="true" />
+		<field id="purchaseEvent" type="assocarray" alwaysNotify="true" />
+		<field id="userUpdate" type="assocarray" alwaysNotify="true" />
+		<field id="impressionEvent" type="assocarray" alwaysNotify="true" />
+		<field id="sdkHasCustomRenderer" type="boolean" alwaysNotify="true" />
+		<field id="logLevel" type="integer" alwaysNotify="false" />
+		<field id="userResources" type="array" alwaysNotify="true" />
+		<field id="userCampaigns" type="assocarray" alwaysNotify="true" />
+		<field id="getNewResourcesDiff" type="boolean" alwaysNotify="true" />
+		<field id="globalCurrencyGiven" type="assocarray" alwaysNotify="true" />
+		<field id="globalUserUpdateWithDate" type="assocarray" alwaysNotify="true" />
+		<field id="globalIAPWithoutReceipt" type="assocarray" alwaysNotify="true" />
+		<field id="globalFlushAndClean" type="boolean" alwaysNotify="true" />
 	</interface>
 
 	<script type="text/brightscript" uri="pkg:/components/SwrveComponents/SwrveNode.brs" />

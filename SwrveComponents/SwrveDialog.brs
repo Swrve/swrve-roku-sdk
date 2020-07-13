@@ -92,7 +92,7 @@ end function
 
 'Dismiss behaviour (press on back, or on a button with dismiss action)'
 function dismiss()
-	m.global.swrveShowIAM = false
+	getSwrveNode().showIAM = false
 	'm.top.visible = "false"
 end function
 
@@ -114,7 +114,7 @@ function buttonSelected()
 		SwrveSDK().SwrveClickEvent(m.top.iam, m.buttonsJSON[m.currentButtonIndex].name)
 
 		SWLogInfo("User pressed on button with custom action:", action, "type:", type(action))
-		m.global.SwrveCustomCallback = action
+		getSwrveNode().customCallback = action
 	end if
 
 	dismiss()

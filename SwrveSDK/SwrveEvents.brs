@@ -354,7 +354,7 @@ function SwrveBuildBatchMeta() as Object
 	jsonObject = {}
 	jsonObject.user = config.userID
 	jsonObject.unique_device_id = config.uniqueDeviceId
-	jsonObject.app_version = config.version
+	jsonObject.app_version = config.appVersion
 	jsonObject.session_token = config.session_token
 	return jsonObject
 end function
@@ -405,7 +405,7 @@ function SwrvePostQueueAndFlush() as Object
 	payload = SwrveBuildBatchFromQueue()
 	SWLogDebug("SwrvePostQueueAndFlush - Preparing request. ")
 	if(payload <> Invalid AND payload.data <> Invalid)
-		SWLogInfo("SwrvePostQueueAndFlush - Items in batch que = ", payload.data.count())
+		SWLogDebug("SwrvePostQueueAndFlush - Items in batch que = ", payload.data.count())
 	end if
 
 	if payload <> Invalid AND payload.data.count() > 0
