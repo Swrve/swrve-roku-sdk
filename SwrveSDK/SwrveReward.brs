@@ -12,9 +12,9 @@ function SwrveReward() as Object
 end function
 
 function AddSwrveReward(rewards as Object, rewardType as String, name as String, amount as Integer) as Object
-	if rewards = invalid
+	if rewards = Invalid
 		rewards = {}
 	end if
-	rewards.rewardsData.AddReplace(name, { "type": rewardType, "amount" : amount })
+	rewards.rewardsData.AddReplace(name, { "type": rewardType, "amount": amount })
 	return rewards
 end function

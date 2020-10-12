@@ -27,20 +27,20 @@ function load() as Object
 
     if msg.GetResponseCode() = 200
       data = ""
-      if msg.GetString() <> "" and msg.GetString() <> invalid
+      if msg.GetString() <> "" AND msg.GetString() <> Invalid
         data = ParseJSON(msg.GetString())
       end if
       ob = {
-          Code: msg.GetResponseCode()
-          Data: data
-          Headers: msg.GetResponseHeaders()
-        }
+        Code: msg.GetResponseCode()
+        Data: data
+        Headers: msg.GetResponseHeaders()
+      }
     else
       ob = {
-          Code: msg.GetResponseCode()
-          Data: msg.GetFailureReason()
-        }
-    endif
+        Code: msg.GetResponseCode()
+        Data: msg.GetFailureReason()
+      }
+    end if
 
     m.top.response = ob
     return ob

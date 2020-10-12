@@ -18,7 +18,7 @@ function load()
     req.InitClientCertificates()
     req.AddHeader("Content-Type", "application/json")
     req.SetURL(request.url)
-    
+
     requestSuccess = req.AsyncPostFromString(request.data)
 
     msg = port.WaitMessage (30000)
@@ -27,21 +27,21 @@ function load()
 
     if msg.GetResponseCode() = 200
       data = ""
-      if msg.GetString() <> "" and msg.GetString() <> invalid
+      if msg.GetString() <> "" AND msg.GetString() <> Invalid
         data = ParseJSON(msg.GetString())
       end if
       ob = {
-          Code: msg.GetResponseCode()
-          Data: data
-          RequestStr: request.data
-        }
+        Code: msg.GetResponseCode()
+        Data: data
+        RequestStr: request.data
+      }
     else
       ob = {
-          Code: msg.GetResponseCode()
-          Data: msg.GetFailureReason()
-          RequestStr: request.data
-        }
-    endif
+        Code: msg.GetResponseCode()
+        Data: msg.GetFailureReason()
+        RequestStr: request.data
+      }
+    end if
 
     m.top.response = ob
     return ob

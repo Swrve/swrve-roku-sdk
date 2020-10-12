@@ -8,5 +8,6 @@
   </interface>
 
   <script type="text/brightscript" uri="pkg:/components/SwrveComponents/CheckAssetsInFileSystemTask.brs" />
+  <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
 
 </component>

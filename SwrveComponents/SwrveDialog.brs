@@ -1,4 +1,4 @@
-function init() as void
+function init() as Void
     m.top.observeField("focusedChild", "onFocusChanged")
     m.top.observeField("setFocus", "setInitFocus")
     m.top.observeField("iam", "OnNewMessage")
@@ -18,16 +18,16 @@ function OnNewMessage() as Void
     clean()
     format = m.top.iam.template.formats
     if format.count() > 0
-        
+
         f = format[0]
 
         di = CreateObject("roDeviceInfo")
         screenSize = di.GetUIResolution()
-        
-        scaleH = f.scale*(screenSize.height) / f.size.h.value
-        scaleW = f.scale*(screenSize.width) / f.size.w.value
 
-        scale = {"h" : scaleH, "w": scaleW}
+        scaleH = f.scale * (screenSize.height) / f.size.h.value
+        scaleW = f.scale * (screenSize.width) / f.size.w.value
+
+        scale = { "h": scaleH, "w": scaleW }
         'There will be two scales used to render things:'
         '1. Scale between real screen size and template size'
         '2. Scale in the message JSON, which will be used later in other methods'
@@ -47,9 +47,8 @@ function onFocusChanged() as Void
 
 end function
 
-
 'Render an array of images'
-function renderImages(images as object, scale as object)
+function renderImages(images as Object, scale as Object)
     for each image in images
         imgName = image.image.value
         SwrveAddImageToNode(m.top, imgName, image.x.value, image.y.value, scale)
@@ -57,7 +56,7 @@ function renderImages(images as object, scale as object)
 end function
 
 'Render buttons and setup an observer for remote presses'
-function renderButtons(buttons as object, scale as object)
+function renderButtons(buttons as Object, scale as Object)
     for each button in buttons
         imgName = button.image_up.value
         button = SwrveAddButtonToNode(m.top, imgName, button.x.value, button.y.value, scale)
@@ -69,13 +68,13 @@ end function
 
 'Next behaviour (right or down arrow)'
 function nextButton()
-    if m.currentButtonIndex < m.buttonsNodes.count() -1
+    if m.currentButtonIndex < m.buttonsNodes.count() - 1
         m.currentButtonIndex = m.currentButtonIndex + 1
     end if
     if m.buttonsNodes.count() > m.currentButtonIndex
         m.buttonsNodes[m.currentButtonIndex].setFocus(true)
     end if
-end Function
+end function
 
 'Previous behaviour (left or up arrow)'
 function previousButton()
@@ -92,8 +91,7 @@ end function
 
 'Dismiss behaviour (press on back, or on a button with dismiss action)'
 function dismiss()
-    m.global.swrveShowIAM = false
-    'm.top.visible = "false"
+    getSwrveNode().showIAM = false
 end function
 
 'Internal callback function for when a user selects a button'
@@ -106,15 +104,16 @@ function buttonSelected()
 
     actionType = m.buttonsJSON[m.currentButtonIndex].type
     if actionType.value = m._swrveConstants.SWRVE_BUTTON_DISMISS
-        SWLog("User pressed on button with dismiss action: No Callback triggered")
+        SWLogInfo("User pressed on button with dismiss action: No Callback triggered")
     else if actionType.value = m._swrveConstants.SWRVE_BUTTON_CUSTOM
 
         action = m.buttonsJSON[m.currentButtonIndex].action.value
 
-        SwrveSDK().SwrveClickEvent(m.top.iam, m.buttonsJSON[m.currentButtonIndex].name)
-
-        SWLog("User pressed on button with custom action: " + action + " type: " + type(action))
-        m.global.SwrveCustomCallback = action
+        payload = {message:m.top.iam , buttonName: m.buttonsJSON[m.currentButtonIndex].name} 
+        getSwrveNode().callFunc("SwrveOnClickEvent", payload)
+        
+        SWLogInfo("User pressed on button with custom action:", action, "type:", type(action))
+        getSwrveNode().customCallback = action
     end if
 
     dismiss()
@@ -131,22 +130,20 @@ function clean()
         if child.id <> "background"
             m.top.removeChild(child)
         end if
-    end for 
-end Function
-
+    end for
+end function
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
     result = false
     if press then
-        if key = "right" or key = "down"
+        if key = "right" OR key = "down"
             nextButton()
             result = true
-        else if key = "left" or key = "up"
+        else if key = "left" OR key = "up"
             previousButton()
             result = true
         end if
     end if
 
     return result
-
 end function

@@ -1,24 +1,67 @@
 <?xml version="1.0" encoding="utf-8" ?> 
 <component name="SwrveNode" extends="Group" xsi:noNamespaceSchemaLocation="https://devtools.web.roku.com/schema/RokuSceneGraph.xsd" >
-	   
 	<interface>
+        <!-- Setup --> 
+        <field id="configuration" type="assocarray" alwaysNotify="true"/>
         <field id="startSwrve" type="boolean" alwaysNotify="true"/>
+
+        <!-- Callbacks -->
+        <field id="customCallback" type="string" alwaysNotify="true" />
+		<field id="identityCallback" type="assocarray" value="{}" alwaysNotify="true" />
+        <field id="messageWillRenderCallback" type="assocarray" value="{}" alwaysNotify="true" />
+        <field id="resourcesAndCampaignsCallback" type="boolean" value="false" alwaysNotify="true" />
+        
+        <!-- Props -->
+         <!--<field id="startSeconds" type="integer" alwaysNotify="false" />
+		<field id="startMilli" type="integer" alwaysNotify="false" />
+	    <field id="appStartSecondsDesc" type="integer" alwaysNotify="false" /> -->
+        <field id="showIAM" type="boolean" alwaysNotify="true" />
+		<field id="currentIAM" type="assocarray" alwaysNotify="true" />
+		<field id="resourcesDiffObjectReady" type="assocarray" alwaysNotify="true" />
+		<field id="assetsReady" type="boolean" alwaysNotify="true" />
+        <field id="isQAUser" type="boolean" alwaysNotify="true" />
+ 		<field id="sdkHasCustomRenderer" type="boolean" alwaysNotify="true" />
+		<field id="logLevel" type="integer" alwaysNotify="false" />
+		<field id="userResources" type="array" alwaysNotify="true" />
+		<field id="userCampaigns" type="assocarray" alwaysNotify="true" />
+
+        <!-- Event APIs -->
+        <function name="SwrveOnEvent"/>
+        <function name="SwrveOnPurchase"/>
+        <function name="SwrveOnUserUpdate"/>
+        <function name="SwrveOnUserUpdateWithDate"/>
+        <function name="SwrveOnCurrencyGiven"/>
+        <function name="SwrveOnIAPWithoutReceipt"/>
+
+        <!-- Private -->
+        <function name="SwrveOnClickEvent"/>
+
+        <!-- APIs -->
+        <function name="SwrveOnGetCampaignsResources"/>
+        <function name="SwrveOnGetResourcesDiff"/>
+        <function name="SwrveFlushAndClean"/>
+        <function name="SwrveOnIdentify"/>
+        <function name="SwrveShutdown"/>
+        <function name="GetCurrentUserIDFromConfig"/>
+        <function name="ProcessUserCampaignsAndResources"/>
+        
+          
     </interface>
     
 	<script type="text/brightscript" uri="pkg:/components/SwrveComponents/SwrveNode.brs" />
 	
-	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveSDK.brs" />
-
-	<script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveCampaigns.brs" />
+    <!-- Swrve -->
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveCampaigns.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveClient.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveDate.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveEvents.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveObject.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveMigrationManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveProduct.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveResourceManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveRestClient.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveReward.brs" />
+    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveSDK.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveStorageManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
 

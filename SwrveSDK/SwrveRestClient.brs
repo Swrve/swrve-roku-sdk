@@ -14,7 +14,6 @@ end function
 function AddSwrveUrlParametersToURL(urlString as String) as String
 	swrveConfig = m.swrve_config
 	swrveJoinedDateEpochMilli = SwrveDateFromString(checkOrWriteJoinedDate()).toMillisToken()
-	appInfo = CreateObject("roAppInfo")
 	device = CreateObject("roDeviceInfo")
 
 	urlString += "?"
@@ -25,19 +24,20 @@ function AddSwrveUrlParametersToURL(urlString as String) as String
 	urlString += "&appId=" + swrveConfig.appId
 	urlString += "&user=" + swrveConfig.userId
 	urlString += "&app_store=roku"
-	urlString += "&app_version=" + appInfo.GetVersion()
-	urlString += "&version=" + swrveConfig.version
-	urlString += "&conversation_version=4" 'hardcoded to get the new CDN paths'
+	urlString += "&app_version=" + swrveConfig.appVersion
+	urlString += "&version=" + SwrveConstants().SWRVE_CAMPAIGN_RESOURCES_API_VERSION
+	urlString += "&conversation_version=" + SwrveConstants().SWRVE_CONVERSATION_VERSION
 	urlString += "&device_name=Roku" + device.GetModel().Trim()
 	urlString += "&os_version=" + device.GetVersion()
 	urlString += "&language=" + device.GetCurrentLocale()
 	urlString += "&orientation=" + swrveConfig.orientation
+	urlString += "&os=roku"
+	urlString += "&device_type=tv"
 
 	return urlString
 end function
 
-
-function Identify(newId as String, observer as Dynamic) as object
+function Identify(newId as String, observer as Dynamic) as Object
 	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
@@ -47,17 +47,18 @@ function Identify(newId as String, observer as Dynamic) as object
 	payload.swrve_id = swrveConfig.userId
 	payload.external_user_id = newId
 	payload.unique_device_id = swrveConfig.uniqueDeviceId
-	
+
+	SWLogInfo("Swrve identifying with externalID:", newId, "swrve user id:", swrveConfig.userId)
 	if swrveConfig.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
-	else 
+	else
 		GenericPOST(urlString, payload, observer)
 	end if
 
 	return Invalid
 end function
 
-function IdentifyWithUserID(userID as String, newId as String, observer as String) as object
+function IdentifyWithUserID(userID as String, newId as String, observer as String) as Object
 	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
@@ -67,10 +68,12 @@ function IdentifyWithUserID(userID as String, newId as String, observer as Strin
 	payload.swrve_id = userID
 	payload.external_user_id = newId
 	payload.unique_device_id = swrveConfig.uniqueDeviceId
-	
+
+	SWLogInfo("Swrve identifying with externalID:", newId, "swrve user id:", userID)
+
 	if swrveConfig.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
-	else 
+	else
 		GenericPOST(urlString, payload, observer)
 	end if
 
@@ -82,10 +85,10 @@ end function
 function GetUserResourcesAndCampaigns(observer as String) as Object
 	swrveConfig = m.swrve_config
 	stack = GetStack(swrveConfig)
-	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_RESOURCES_AND_CAMPAIGNS_URL
+	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_CONTENT_URL
 	urlString = AddSwrveUrlParametersToURL(urlString)
-
-	etag = SwrveGetStringFromPersistence(SwrveConstants().SWRVE_ETAG_FILENAME, "")
+	
+	etag = SwrveGetValueFromSection(GetCurrentUserIDFromConfig(), SwrveConstants().SWRVE_ETAG_FILENAME)
 	if etag <> ""
 		urlString += "&etag=" + etag
 	end if
@@ -93,13 +96,13 @@ function GetUserResourcesAndCampaigns(observer as String) as Object
 	if swrveConfig.mockHTTPGETResponses = true
 		rtn = GenericGET(urlString, "")
 		return rtn
-	else 
+	else
 		GenericGET(urlString, observer)
 	end if
 
 	return Invalid
-	
-end Function
+
+end function
 
 'Downloads the diff and returns the raw object'
 function GetResourceDiff(observer as String) as Object
@@ -107,11 +110,11 @@ function GetResourceDiff(observer as String) as Object
 	stack = GetStack(swrveConfig)
 	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_RESOURCES_DIFF_URL
 	urlString = AddSwrveUrlParametersToURL(urlString)
-	
+
 	if swrveConfig.mockHTTPGETResponses = true
 		rtn = GenericGET(urlString, "")
 		return rtn
-	else 
+	else
 		GenericGET(urlString, observer)
 	end if
 
@@ -119,20 +122,20 @@ function GetResourceDiff(observer as String) as Object
 end function
 
 'Transform the diff into the right struct with old/new pairs'
-function SortResourceDiff(diff as Object) as object
+function SortResourceDiff(diff as Object) as Object
 	flatStructure = {}
-	if diff.code < 400 and diff.data <> invalid
+	if diff.code < 400 AND diff.data <> Invalid
 		old = {}
 		new = {}
 		for each resource in diff.data
 			oldValues = {}
 			newValues = {}
-			if resource.diff <> invalid
+			if resource.diff <> Invalid
 				for each key in resource.diff.keys()
-					if resource.diff[key]["old"] <> invalid
+					if resource.diff[key]["old"] <> Invalid
 						oldValues[key] = resource.diff[key]["old"]
 					end if
-					if resource.diff[key]["new"] <> invalid
+					if resource.diff[key]["new"] <> Invalid
 						newValues[key] = resource.diff[key]["new"]
 					end if
 				end for
@@ -142,41 +145,39 @@ function SortResourceDiff(diff as Object) as object
 		end for
 		flatStructure.old = old
 		flatStructure.new = new
-	end if 
-	
+	end if
+
 	return flatStructure
-end Function
+end function
 
-
-function SwrveGetResourcesDiff() as Object
-	rawDiff = GetResourceDiff("SwrveOnGetResourcesDiff")
+function SwrveOnGetResourcesDiff() as Object
+	rawDiff = GetResourceDiff("SwrveResourcesDiff")
 	return rawDiff
 end function
 
-function SwrveOnGetResourcesDiff(responseEvent as Dynamic) as Object
-	if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+function SwrveResourcesDiff(responseEvent as Dynamic) as Object
+	if(responseEvent <> Invalid AND type(responseEvent) = "roSGNodeEvent")
 		response = responseEvent.getData()
 		responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
-	else 
+	else
 		response = responseEvent
 	end if
 
 	sorted = SortResourceDiff(response)
-	m.global.SwrveResourcesDiffObjectReady = sorted
+	getSwrveNode().resourcesDiffObjectReady = sorted
 	return sorted
 end function
 
-
 'Loads from file user resources and campaigns'
 function GetMockedUserResourcesAndCampaigns(filename) as Object
-	obj = SwrveGetObjectFromFile(SwrveConstants().SWRVE_JSON_LOCATION + filename) 
-	if obj <> invalid and type(obj) <> "roString"
+	obj = SwrveGetObjectFromFile(SwrveConstants().SWRVE_JSON_LOCATION + filename)
+	if obj <> Invalid AND type(obj) <> "roString"
 		mockedResponse = {
 			code: 200
 			data: obj
 		}
 		return mockedResponse
-	else 
+	else
 		mockedResponse = {
 			code: 999
 			data: "Invalid or non existent file"
@@ -193,7 +194,7 @@ function SendBatchPOST(payload as Object, observer as Dynamic) as Object
 
 	if swrveConfig.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
-	else 
+	else
 		GenericPOST(urlString, payload, observer)
 	end if
 
@@ -206,9 +207,9 @@ function GenericPOST(url as String, data as Object, observer as Dynamic) as Obje
 
 	if swrveConfig.mockHTTPPOSTResponses = true
 		if(type(observer) = "String")
-			return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim()}
-		else 
-			return observer({ Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim()})
+			return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim() }
+		else
+			return observer({ Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim() })
 		end if
 	end if
 
@@ -216,11 +217,12 @@ function GenericPOST(url as String, data as Object, observer as Dynamic) as Obje
 	strData = FormatJson(data)
 
 	request = {
-		url:url.Trim(),
-		data:strData
+		url: url.Trim(),
+		data: strData
 	}
 
-	SWLog("GenericPOST() Sending POST to " + url)
+	SWLogDebug("GenericPOST() Sending POST to " + url)
+	SWLogDebug("GenericPOST() POST body " + strData)
 
 	_postTask = CreateObject("roSGNode", "GenericPOSTTask")
 	_postTask.request = request
@@ -230,20 +232,18 @@ function GenericPOST(url as String, data as Object, observer as Dynamic) as Obje
 	return {}
 end function
 
-
-
 function GenericGET(url as String, observer as Dynamic) as Object
 	swrveConfig = m.swrve_config
 
 	if swrveConfig.mockHTTPGETResponses = true
-		return { Code: swrveConfig.mockedGETResponseCode, Data: {"user_resources" : {}, campaigns : {} }, requestUrl:url.Trim()}
+		return { Code: swrveConfig.mockedGETResponseCode, Data: { "user_resources": {}, campaigns: {} }, requestUrl: url.Trim() }
 	end if
 
 	request = {
-		url:url.Trim()
+		url: url.Trim()
 	}
 
-	SWLog("GenericGET() to " + url)
+	SWLogDebug("GenericGET() to " + url)
 
 	_getTask = createObject("roSGNode", "GenericGETTask")
 	_getTask.request = request
@@ -252,23 +252,24 @@ function GenericGET(url as String, observer as Dynamic) as Object
 	m._getTask = _getTask
 
 	return Invalid
-end Function
-
+end function
 
 function DownloadAndStoreAssets(ids as Object) as Object
 	m._assetIds = []
-	
+
 	for each id in ids
 		m._assetIds.Push(id)
 	end for
 
-	for each id in ids
-		response = DownloadAndStoreImage(id)
-	end for
+	if m._assetIds.count() > 0 
+		for each id in ids
+			response = DownloadAndStoreImage(id)
+		end for
+	end if
 end function
 
 function _SwrveOnDownloadAndStoreImage(responseEvent)
-	if(responseEvent <> invalid AND type(responseEvent) = "roSGNodeEvent")
+	if(responseEvent <> Invalid AND type(responseEvent) = "roSGNodeEvent")
 		response = responseEvent.getData()
 	end if
 	responseEvent.getRoSGNode().unobserveField(responseEvent.getField())
@@ -290,18 +291,16 @@ end function
 function DownloadAndStoreImage(id as String) as Object
 	swrveConfig = m.swrve_config
 
-	cdn = m.userCampaigns.cdn_root
+	cdn = m.userCampaigns.cdn_paths.message_images
 
 	url = cdn + id
-	SWLog("Downloading " + url)
+	SWLogInfo("Downloading " + url)
 	localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
 
-
 	request = {
-		id:id,
-		url:url.Trim(),
-		localUrl:localUrl,
-		assetLocation:SwrveConstants().SWRVE_ASSETS_LOCATION
+		id: id,
+		url: url.Trim(),
+		localUrl: localUrl
 	}
 
 	_getTask = createObject("roSGNode", "DownloadAndStoreImageTask")
@@ -309,5 +308,3 @@ function DownloadAndStoreImage(id as String) as Object
 	_getTask.ObserveField("response", "_SwrveOnDownloadAndStoreImage")
 	_getTask.Control = "Run"
 end function
-
-

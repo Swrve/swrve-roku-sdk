@@ -16,8 +16,8 @@ Installation
 
 Requirements
 ------------
-### Roku 7.7.2 or later
-To make use of the latest tools provided by the BrightScript SDK and maximize compatibility across platforms, the Swrve Roku SDK uses Roku firmware version **7.7.2 or later**.
+### Roku 8.0 or later
+To make use of the latest tools provided by the BrightScript SDK and maximize compatibility across platforms, the Swrve Roku SDK uses Roku firmware version **8.0 or later**.
 
 Contributing
 ------------

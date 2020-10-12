@@ -7,10 +7,10 @@ use Swrve features. -->
         <field id="iam" type="assocarray" alwaysNotify="true" />
         <field id="asset_location" type="string" alwaysNotify="true" />
     </interface>
+    <script type="text/brightscript" uri="pkg:/components/SwrveComponents/SwrveDialog.brs" />
 
+    <!-- Swrve -->
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
     <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveStorageManager.brs" />
-    <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveSDK.brs" />
-    <script type="text/brightscript" uri="pkg:/components/SwrveComponents/SwrveDialog.brs" />
+    
 </component>
