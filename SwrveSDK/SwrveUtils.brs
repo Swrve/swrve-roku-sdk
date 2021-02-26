@@ -1,8 +1,15 @@
 ' Used in the main thread and in the Render thread.
 
 'gets the global Swrve Node'
-function getSwrveNode() as Object
-	return GetGlobalAA().global.Swrve
+function getSwrveNode(functionName = "") as Object
+  if GetGlobalAA().global.Swrve <> Invalid 
+    return GetGlobalAA().global.Swrve
+  else
+    if createObject("roAppInfo").IsDev() 
+      print "[Swrve-Error] "; functionName; " Swrve Node is invalid, SDK has not be intialised yet"
+    end if
+    return Invalid
+  end if 
 end function
 
 'log statements under the VERBOSE label and log level'
@@ -33,6 +40,7 @@ end sub
 'log statements under the INFO label and log level'
 sub SWLogAny(paramArr as Object, level as Integer)
   if NOT createObject("roAppInfo").IsDev() then return
+  if getSwrveNode("SWLogAny") = Invalid then return
   logLevel = getSwrveNode().logLevel
   if logLevel < level then return
 

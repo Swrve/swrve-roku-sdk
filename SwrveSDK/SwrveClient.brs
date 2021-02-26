@@ -1,5 +1,6 @@
 ' Swrve instance creator.'
-function Swrve(config as Object)
+function Swrve(config as Object) as Void
+    if getSwrveNode("Swrve") = Invalid then return
     
     'Development: Benchmarking
     'swrveInit = SwrveGetTimestamp()
@@ -161,7 +162,7 @@ function SwrveStartSession()
     if shouldSendSessionStart
         SWLogDebug("Session started, send session_start for user", m.swrve_config.userId)
         SwrveSessionStart()
-        SwrveDeviceUpdate(SwrveUserInfosDictionary())
+        SwrveDeviceUpdate(SwrveDeviceInfosDictionary())
     else
         SWLogDebug("Session continued, keep the session alive for user", m.swrve_config.userId)
     end if
@@ -306,7 +307,7 @@ function SwrveOnShowIAM()
 end function
 
 function GetStack(config as Object) as String
-    if config.DoesExist("stack") AND config.stack = "eu"
+    if config <> Invalid AND config.DoesExist("stack") AND config.stack = "eu"
         return "eu-"
     else
         return ""
@@ -314,7 +315,6 @@ function GetStack(config as Object) as String
 end function
 
 function SwrveIdentify(externalID as String) as Object
-
     if(m.swrve_config = Invalid) return Invalid
 
     m.swrve_config.identifiedOnAnotherDevice = false
@@ -500,37 +500,26 @@ end function
 
 function SwrveStop()
     SWLogDebug("Pausing event queuing and Swrve Timer")
-    m.swrve_config.stopped = true
+    if m.swrve_config <> Invalid then m.swrve_config.stopped = true
     if m.delayTimer <> Invalid then m.delayTimer.control = "stop"
 end function
 
 function SwrveResume()
     SWLogDebug("Resume Swrve Timer")
-    m.swrve_config.stopped = false
+    if m.swrve_config <> Invalid then m.swrve_config.stopped = false
     if m.delayTimer <> Invalid
         m.delayTimer.control = "start"
         SwrveOnTimer()
     end if
 end function
 
-function SwrveShutdown() as Object
+function SwrveShutdown() as object
+    SWLogWarn("Shutdown initiated.")
+    SWLogWarn("Shutdown. To use Swrve features you will need to reinitiate.")
     if(m.delayTimer <> Invalid)
         m.delayTimer.control = "stop"
         m.delayTimer = Invalid
     end if
-
-    SWLogWarn("Shutdown initiated.")
-    SWLogWarn("Shutdown initiated....Flushing queue")
-    SWLogWarn("Shutdown initiated....clearing persistent storage")
-
-    SwrveDeleteKeyFromSection("Swrve", SwrveConstants().SWRVE_USER_ID_KEY)
-    SwrveDeleteKeyFromSection(m.swrve_config.userId, SwrveConstants().SWRVE_LAST_SESSION_DATE_KEY)
-    SwrveDeleteKeyFromSection(m.swrve_config.userId, SwrveConstants().SWRVE_START_SESSION_DATE_KEY)
-    SwrveDeleteKeyFromSection(m.swrve_config.userId, SwrveConstants().SWRVE_SEQNUM)
-    SwrveDeleteKeyFromSection(m.swrve_config.userId, SwrveConstants().SWRVE_ETAG_FILENAME)
-
-    SWLogWarn("Shutdown initiated....Clearing memory")
-    SWLogWarn("Shutdown. To use Swrve features you will need to reinitiate.")
 
     m.userCampaigns = Invalid
     m.userResources = Invalid
@@ -543,11 +532,14 @@ function SwrveShutdown() as Object
     m.swrve_config = Invalid
 
     SwrveNode = getSwrveNode()
-    fields = SwrveNode.keys()
-    ' Stop watching for public api events
-    for each field in fields
-        SwrveNode.unobserveField(field)
-    end for
+    if SwrveNode <> invalid
+        fields = SwrveNode.keys()
+        ' Stop watching for public api events
+        for each field in fields
+            SwrveNode.unobserveField(field)
+        end for
+    end if
+
 end function
 
 function SwrveOnTimer()
@@ -616,11 +608,11 @@ function SwrveOnUserCampaignsAndResources(response = {} as Dynamic)
     gotNewResourcesOrCampaigns = false
 
     if resAndCamp <> Invalid AND resAndCamp.code < 400 AND resAndCamp.code > 0
-        if resAndCamp.headers <> Invalid AND resAndCamp.headers.etag <> Invalid
+        if m.swrve_config <> Invalid AND resAndCamp.headers <> Invalid AND resAndCamp.headers.etag <> Invalid
             etag = resAndCamp.headers.etag
             SwrveWriteValueToSection(m.swrve_config.userId, SwrveConstants().SWRVE_ETAG_FILENAME, etag)
         end if
-        if SwrveDictionaryHasUserResource(resAndCamp) 'If not, it means it hasn't changed (etag check), just use the one from persistence
+        if m.swrve_config <> Invalid AND SwrveDictionaryHasUserResource(resAndCamp) 'If not, it means it hasn't changed (etag check), just use the one from persistence
             gotNewResourcesOrCampaigns = true
             userResources = SwrveGetUserResourcesFromDictionarySafe(resAndCamp)
             userResoucesStr = FormatJSON(userResources)
@@ -634,7 +626,7 @@ function SwrveOnUserCampaignsAndResources(response = {} as Dynamic)
             SwrveWriteValueToSection(m.swrve_config.userId, SwrveConstants().SWRVE_USER_RESOURCES_SIGNATURE_FILENAME, userResourcesSignature)
 
         end if
-        if SwrveDictionaryHasUserCampaigns(resAndCamp)
+        if m.swrve_config <> Invalid AND SwrveDictionaryHasUserCampaigns(resAndCamp)
             gotNewResourcesOrCampaigns = true
             userCampaigns = SwrveGetUserCampaignsFromDictionarySafe(resAndCamp)
             userCampaignsStr = FormatJSON(userCampaigns)
@@ -653,13 +645,13 @@ function SwrveOnUserCampaignsAndResources(response = {} as Dynamic)
             SwrveCheckAssetsAllDownloaded("SwrveDownloadAssetsIfAllAssetsNotDownloaded")
         end if
 
-        if resAndCamp.data <> Invalid AND resAndCamp.data.flush_refresh_delay <> Invalid
+        if  m.swrve_config <> Invalid  AND resAndCamp.data <> Invalid AND resAndCamp.data.flush_refresh_delay <> Invalid
             SWLogDebug("Updating config flush delay to " + (resAndCamp.data.flush_refresh_delay / 1000).toStr() + " seconds")
             m.swrve_config.flushingDelay = Int(resAndCamp.data.flush_refresh_delay / 1000)
             SwrveFlushAndClean()
         end if
 
-        if resAndCamp.data.qa <> Invalid
+        if  m.swrve_config <> Invalid  AND resAndCamp.data.qa <> Invalid
             m.SwrveQA = resAndCamp.data.qa
             m.swrve_config.isQAUser = SwrveIsQAUser(resAndCamp)
             getSwrveNode().isQAUser = m.swrve_config.isQAUser
@@ -668,16 +660,18 @@ function SwrveOnUserCampaignsAndResources(response = {} as Dynamic)
             end if
         end if
 
-        if resAndCamp.data <> Invalid AND resAndCamp.data.flush_frequency <> Invalid
+        if m.swrve_config <> Invalid AND resAndCamp.data <> Invalid AND resAndCamp.data.flush_frequency <> Invalid
             SWLogDebug("Updating config campaignsAndResourcesDelay delay to " + (resAndCamp.data.flush_frequency / 1000).toStr() + " seconds")
             m.swrve_config.campaignsAndResourcesDelay = Int(resAndCamp.data.flush_frequency / 1000)
         end if
 
         'TODO: m.swrve_config.campaignsAndResourcesDelay should update with value from back end. User this ? "flush_frequency": 60000
-        now = CreateObject("roDateTime").AsSeconds()
-        m.swrveNextUpdateCampaignsAndResources = now + m.swrve_config.campaignsAndResourcesDelay
+        if  m.swrve_config <> Invalid 
+            now = CreateObject("roDateTime").AsSeconds()
+            m.swrveNextUpdateCampaignsAndResources = now + m.swrve_config.campaignsAndResourcesDelay    
+        end if
 
-        if gotNewResourcesOrCampaigns OR getSwrveNode().resourcesAndCampaignsCallback = false
+        if getSwrveNode("SwrveOnUserCampaignsAndResources") <> Invalid AND (gotNewResourcesOrCampaigns OR getSwrveNode().resourcesAndCampaignsCallback = false)
             'Notify observers that we got new campaigns and resources'
             getSwrveNode().resourcesAndCampaignsCallback = true
         end if
@@ -696,34 +690,45 @@ end function
 
 function SwrveBuildArrayOfAssetIDs(campaigns as Object) as Object
     ids = []
-    for each campaign in campaigns.campaigns
-        if campaign.messages <> Invalid
-            for each message in campaign.messages
-                if message.template <> Invalid
-                    if message.template.formats <> Invalid
-                        for each format in message.template.formats
-                            if format.images <> Invalid
-                                for each image in format.images
-                                    if image.image <> Invalid AND image.image.type = "asset" AND image.image.value <> Invalid AND NOT SwrveArrayContains(ids, image.image.value)
-                                        id = image.image.value
-                                        ids.push(id)
-                                    end if
-                                end for
-                            end if
-                            if format.buttons <> Invalid
-                                for each button in format.buttons
-                                    if button.image_up <> Invalid AND button.image_up.type = "asset" AND button.image_up.value <> Invalid AND NOT SwrveArrayContains(ids, button.image_up.value)
-                                        id = button.image_up.value
-                                        ids.push(id)
-                                    end if
-                                end for
-                            end if
-                        end for
-                    end if
+    if campaigns <> Invalid
+        for each campaign in campaigns.campaigns
+            if campaign.messages <> Invalid
+                for each message in campaign.messages
+                    messageIDs = SwrveBuildArrayOfAssetIDsFromMessage(message)
+                    for each id in messageIDs
+                        ids.push(id)
+                    end for
+                end for
+            end if
+        end for
+    end if
+    return ids
+end function
+
+function SwrveBuildArrayOfAssetIDsFromMessage(message as Object) as Object
+    ids = []
+    if message.template <> Invalid
+        if message.template.formats <> Invalid
+            for each format in message.template.formats
+                if format.images <> Invalid
+                    for each image in format.images
+                        if image.image <> Invalid AND image.image.type = "asset" AND image.image.value <> Invalid AND NOT SwrveArrayContains(ids, image.image.value)
+                            id = image.image.value
+                            ids.push(id)
+                        end if
+                    end for
+                end if
+                if format.buttons <> Invalid
+                    for each button in format.buttons
+                        if button.image_up <> Invalid AND button.image_up.type = "asset" AND button.image_up.value <> Invalid AND NOT SwrveArrayContains(ids, button.image_up.value)
+                            id = button.image_up.value
+                            ids.push(id)
+                        end if
+                    end for
                 end if
             end for
         end if
-    end for
+    end if
     return ids
 end function
 
@@ -738,7 +743,7 @@ end function
 
 function DownloadAssetsFromCampaigns()
     campaigns = m.userCampaigns
-    if campaigns.campaigns <> Invalid
+    if campaigns <> Invalid AND campaigns.campaigns <> Invalid
         ids = SwrveBuildArrayOfAssetIDs(campaigns)
         DownloadAndStoreAssets(ids)
     end if
@@ -746,7 +751,7 @@ end function
 
 function assetsDownloadCallback()
     SWLogDebug("Assets downloaded", ListDir(SwrveConstants().SWRVE_ASSETS_LOCATION))
-    getSwrveNode().assetsReady = true
+    if getSwrveNode() <> Invalid then getSwrveNode().assetsReady = true
     fakeEvent = SwrveCreateEvent(SwrveConstants().SWRVE_EVENT_AUTOSHOW_SESSION_START)
     SwrveCheckEventForTriggers(fakeEvent)
 end function
@@ -819,7 +824,7 @@ function SaveQueueToPersistence() as Boolean
 end function
 
 ' Returns a dictionary of default user update properties'
-function SwrveUserInfosDictionary() as Object
+function SwrveDeviceInfosDictionary() as Object
     device = CreateObject("roDeviceInfo")
 
     dt = CreateObject ("roDateTime")
@@ -855,7 +860,8 @@ function SwrveUserInfosDictionary() as Object
         "swrve.app_store": "google", 'Will have to be changed to roku when supported by backend'
         "swrve.timezone_name": device.GetTimeZone(),
         "swrve.utc_offset_seconds": utcSecondsOffset,
-        "swrve.install_date": strDate
+        "swrve.install_date": strDate,
+        "swrve.device_type": "tv"
     }
     return attributes
 end function
@@ -963,10 +969,12 @@ function GetSessionStartDateAsSeconds() as Integer
 end function
 
 function GetCurrentUserIDFromConfig() as String
+    if m.swrve_config = Invalid then return ""
     return m.swrve_config.userId
 end function
 
 function GetUserQAStatus() as Boolean
+    if m.swrve_config = Invalid then return false
     return m.swrve_config.isQAUser
 end function
 
@@ -1019,7 +1027,7 @@ function RemoveIAMInClient()
 end function
 
 function ShowIAMInClient()
-    if getSwrveNode().showIAM
+    if getSwrveNode() <> Invalid AND getSwrveNode().showIAM
         SWLogInfo("SwrveClient() Swrve has been asked to show an IAM")
         message = getSwrveNode().currentIAM
 

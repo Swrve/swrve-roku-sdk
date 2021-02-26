@@ -66,9 +66,21 @@ function SwrveCheckAssetsInCampaignAreReady(campaign as Object) as Boolean
 	return true
 end function
 
+function SwrveCheckAssetsInMessageAreReady(message as Object) as Boolean
+	ids = SwrveBuildArrayOfAssetIDsFromMessage(message)
+	for each id in ids
+		localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
+		file = MatchFiles(SwrveConstants().SWRVE_ASSETS_LOCATION, id)
+		if file.count() = 0 'Asset not found'
+			return false
+		end if
+	end for
+	return true
+end function
+
 function SwrveBuildArrayOfComplyingCampaigns(event as Object) as Object
 	ids = []
-	if m.userCampaigns.campaigns <> Invalid AND m.userCampaigns.campaigns.count() > 0
+	if m.userCampaigns <> Invalid AND m.userCampaigns.campaigns <> Invalid AND m.userCampaigns.campaigns.count() > 0
 		for each campaign in m.userCampaigns.campaigns
 			if campaign.messages <> Invalid
 				if SwrveEventValidForCampaign(event, campaign)
@@ -130,10 +142,24 @@ function SwrveProcessShowIAM(campaign as Object)
 	SwrveFlushAndClean()
 end function
 
+function SwrveShowIAM(message as Object)
+	if SwrveCheckAssetsInMessageAreReady(message) = false
+		SWLogWarn("Abort showing message. Assets are not ready or missing.")
+	else 
+		if getSwrveNode().sdkHasCustomRenderer = true
+			getSwrveNode().messageWillRenderCallback = message
+		else
+			SwrveRenderIAM(message)
+		end if
+	end if
+end function
+
 function SwrveRenderIAM(message as Object)
-	SWLogInfo("Showing IAM -", message.id)
-	getSwrveNode().currentIAM = message
-	getSwrveNode().showIAM = true
+	if getSwrveNode("SwrveRenderIAM") <> Invalid 
+		SWLogInfo("Showing IAM -", message.id)
+		getSwrveNode().currentIAM = message
+		getSwrveNode().showIAM = true
+	end if
 end function
 
 function SwrveUpdateGlobalRules()

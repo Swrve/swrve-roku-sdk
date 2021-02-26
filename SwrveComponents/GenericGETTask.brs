@@ -25,21 +25,26 @@ function load() as Object
 
     ob = Invalid
 
-    if msg.GetResponseCode() = 200
-      data = ""
-      if msg.GetString() <> "" AND msg.GetString() <> Invalid
-        data = ParseJSON(msg.GetString())
+    if (type(msg) = "roUrlEvent")
+      if msg.GetResponseCode() = 200
+        data = ""
+        if msg.GetString() <> "" AND msg.GetString() <> Invalid
+          data = ParseJSON(msg.GetString())
+        end if
+        ob = {
+          Code: msg.GetResponseCode()
+          Data: data
+          Headers: msg.GetResponseHeaders()
+        }
+      else
+        ob = {
+          Code: msg.GetResponseCode()
+          Data: msg.GetFailureReason()
+        }
       end if
-      ob = {
-        Code: msg.GetResponseCode()
-        Data: data
-        Headers: msg.GetResponseHeaders()
-      }
-    else
-      ob = {
-        Code: msg.GetResponseCode()
-        Data: msg.GetFailureReason()
-      }
+    else if (msg = invalid)
+      SWLogError("AsyncGetToString failed: ", request.url)
+      req.asynccancel()
     end if
 
     m.top.response = ob

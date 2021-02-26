@@ -9,4 +9,8 @@
 
   <script type="text/brightscript" uri="pkg:/components/SwrveComponents/DownloadAndStoreImageTask.brs" />
 
+  <!-- Swrve -->
+  <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveConstants.brs" />
+  <script type="text/brightscript" uri="pkg:/source/SwrveSDK/SwrveUtils.brs" />
+
 </component>

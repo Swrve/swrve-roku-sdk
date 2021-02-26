@@ -38,18 +38,18 @@ function AddSwrveUrlParametersToURL(urlString as String) as String
 end function
 
 function Identify(newId as String, observer as Dynamic) as Object
-	swrveConfig = m.swrve_config
-	stack = GetStack(swrveConfig)
-	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
+	if m.swrve_config = Invalid then return Invalid
+	stack = GetStack(m.swrve_config)
+	urlString = SwrveConstants().SWRVE_HTTPS + m.swrve_config.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
 
 	payload = {}
-	payload.api_key = swrveConfig.apiKey
-	payload.swrve_id = swrveConfig.userId
+	payload.api_key = m.swrve_config.apiKey
+	payload.swrve_id = m.swrve_config.userId
 	payload.external_user_id = newId
-	payload.unique_device_id = swrveConfig.uniqueDeviceId
+	payload.unique_device_id = m.swrve_config.uniqueDeviceId
 
-	SWLogInfo("Swrve identifying with externalID:", newId, "swrve user id:", swrveConfig.userId)
-	if swrveConfig.mockHTTPPOSTResponses = true
+	SWLogInfo("Swrve identifying with externalID:", newId, "swrve user id:", m.swrve_config.userId)
+	if m.swrve_config.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
 	else
 		GenericPOST(urlString, payload, observer)
@@ -59,19 +59,19 @@ function Identify(newId as String, observer as Dynamic) as Object
 end function
 
 function IdentifyWithUserID(userID as String, newId as String, observer as String) as Object
-	swrveConfig = m.swrve_config
-	stack = GetStack(swrveConfig)
-	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
+	if m.swrve_config = Invalid then return Invalid
+	stack = GetStack(m.swrve_config)
+	urlString = SwrveConstants().SWRVE_HTTPS + m.swrve_config.appId + "." + stack + SwrveConstants().SWRVE_IDENTIFY_URL
 
 	payload = {}
-	payload.api_key = swrveConfig.apiKey
+	payload.api_key = m.swrve_config.apiKey
 	payload.swrve_id = userID
 	payload.external_user_id = newId
-	payload.unique_device_id = swrveConfig.uniqueDeviceId
+	payload.unique_device_id = m.swrve_config.uniqueDeviceId
 
 	SWLogInfo("Swrve identifying with externalID:", newId, "swrve user id:", userID)
 
-	if swrveConfig.mockHTTPPOSTResponses = true
+	if m.swrve_config.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
 	else
 		GenericPOST(urlString, payload, observer)
@@ -83,9 +83,9 @@ end function
 
 'Downloads and returns the User resources and campaign'
 function GetUserResourcesAndCampaigns(observer as String) as Object
-	swrveConfig = m.swrve_config
-	stack = GetStack(swrveConfig)
-	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_CONTENT_URL
+	if m.swrve_config = Invalid then return Invalid
+	stack = GetStack(m.swrve_config)
+	urlString = SwrveConstants().SWRVE_HTTPS + m.swrve_config.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_CONTENT_URL
 	urlString = AddSwrveUrlParametersToURL(urlString)
 	
 	etag = SwrveGetValueFromSection(GetCurrentUserIDFromConfig(), SwrveConstants().SWRVE_ETAG_FILENAME)
@@ -93,9 +93,8 @@ function GetUserResourcesAndCampaigns(observer as String) as Object
 		urlString += "&etag=" + etag
 	end if
 
-	if swrveConfig.mockHTTPGETResponses = true
-		rtn = GenericGET(urlString, "")
-		return rtn
+	if m.swrve_config.mockHTTPGETResponses = true
+		return GenericGET(urlString, "")
 	else
 		GenericGET(urlString, observer)
 	end if
@@ -106,14 +105,13 @@ end function
 
 'Downloads the diff and returns the raw object'
 function GetResourceDiff(observer as String) as Object
-	swrveConfig = m.swrve_config
-	stack = GetStack(swrveConfig)
-	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_RESOURCES_DIFF_URL
+	if m.swrve_config = Invalid then return Invalid
+	stack = GetStack(m.swrve_config )
+	urlString = SwrveConstants().SWRVE_HTTPS + m.swrve_config .appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_RESOURCES_DIFF_URL
 	urlString = AddSwrveUrlParametersToURL(urlString)
 
-	if swrveConfig.mockHTTPGETResponses = true
-		rtn = GenericGET(urlString, "")
-		return rtn
+	if m.swrve_config .mockHTTPGETResponses = true
+		return GenericGET(urlString, "")
 	else
 		GenericGET(urlString, observer)
 	end if
@@ -188,11 +186,11 @@ end function
 
 'Will send some JSON payload to the batch endpoint
 function SendBatchPOST(payload as Object, observer as Dynamic) as Object
-	swrveConfig = m.swrve_config
-	stack = GetStack(swrveConfig)
-	urlString = SwrveConstants().SWRVE_HTTPS + swrveConfig.appId + "." + stack + SwrveConstants().SWRVE_API_ENDPOINT + SwrveConstants().SWRVE_BATCH_URL
+	if m.swrve_config = Invalid then return Invalid
+	stack = GetStack(m.swrve_config)
+	urlString = SwrveConstants().SWRVE_HTTPS + m.swrve_config.appId + "." + stack + SwrveConstants().SWRVE_API_ENDPOINT + SwrveConstants().SWRVE_BATCH_URL
 
-	if swrveConfig.mockHTTPPOSTResponses = true
+	if m.swrve_config.mockHTTPPOSTResponses = true
 		return GenericPOST(urlString, payload, observer)
 	else
 		GenericPOST(urlString, payload, observer)
@@ -203,13 +201,13 @@ end function
 
 ' Generic POST function
 function GenericPOST(url as String, data as Object, observer as Dynamic) as Object
-	swrveConfig = m.swrve_config
+	if m.swrve_config = Invalid then return {}
 
-	if swrveConfig.mockHTTPPOSTResponses = true
+	if m.swrve_config.mockHTTPPOSTResponses = true
 		if(type(observer) = "String")
-			return { Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim() }
+			return { Code: m.swrve_config.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim() }
 		else
-			return observer({ Code: swrveConfig.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim() })
+			return observer({ Code: m.swrve_config.mockedPOSTResponseCode, Data: "Mocked response", requestUrl: url.Trim() })
 		end if
 	end if
 
@@ -233,10 +231,10 @@ function GenericPOST(url as String, data as Object, observer as Dynamic) as Obje
 end function
 
 function GenericGET(url as String, observer as Dynamic) as Object
-	swrveConfig = m.swrve_config
+	if m.swrve_config = Invalid then return Invalid
 
-	if swrveConfig.mockHTTPGETResponses = true
-		return { Code: swrveConfig.mockedGETResponseCode, Data: { "user_resources": {}, campaigns: {} }, requestUrl: url.Trim() }
+	if m.swrve_config.mockHTTPGETResponses = true
+		return { Code: m.swrve_config.mockedGETResponseCode, Data: { "user_resources": {}, campaigns: {} }, requestUrl: url.Trim() }
 	end if
 
 	request = {

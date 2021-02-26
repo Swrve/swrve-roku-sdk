@@ -294,7 +294,7 @@ end function
 
 ' Add event to the general event queue
 function SwrveAddEventToQueue(event as Object) as Void
-	if m.swrve_config.stopped = false
+	if m.swrve_config <> Invalid AND m.eventsQueue <> Invalid AND m.swrve_config.stopped = false
 		SWLogDebug("Adding event to queue", event)
 		m.eventsSentOrQueuedRecently = true
 		m.eventsQueue.push(event)
@@ -314,7 +314,7 @@ end function
 
 ' Add event to QA queue
 function SwrveAddEventToQAQueue(event as Object) as Void
-	if m.swrve_config.stopped = false
+	if m.swrve_config <> Invalid AND m.swrve_config.stopped = false
 		SWLogDebug("Adding event to QA queue", event)
 		m.eventsSentOrQueuedRecently = true
 		m.eventsQAQueue.push(event)
@@ -334,43 +334,53 @@ end function
 
 'Will check the queue size compared to max size, and flush if we get over'
 function SwrveCheckQueueSize() as Void
-	if SwrveQueueSize() > m.swrve_config.queueMaxSize
-		SWLogError("Event queue is too large. Sending events now to backend and flushing buffer")
-		SwrveFlushAndClean()
+	if  m.swrve_config <> Invalid
+		if SwrveQueueSize() > m.swrve_config.queueMaxSize
+			SWLogError("Event queue is too large. Sending events now to backend and flushing buffer")
+			SwrveFlushAndClean()
+		end if
 	end if
 end function
 
 ' Flush the queue
 function SwrveFlushQueue() as Void
-	m.eventsQueue.clear()
+	if m.eventsQueue <> Invalid 
+		m.eventsQueue.clear()
+	end if
 end function
 
 ' Flush the QA queue
 function SwrveFlushQAQueue() as Void
-	m.eventsQAQueue.clear()
+	if m.eventsQAQueue <> Invalid 
+		m.eventsQAQueue.clear()
+	end if
 end function
 
 ' Returns the size of the queue
 function SwrveQueueSize() as Integer
-	return m.eventsQueue.Count()
+	if m.eventsQueue <> Invalid 
+		return m.eventsQueue.Count()
+	end if
+	return 0
 end function
 
 ' Build the meta fields that are at the root of the json'
 function SwrveBuildBatchMeta() as Object
-	config = m.swrve_config
 	jsonObject = {}
-	jsonObject.user = config.userId
-	jsonObject.unique_device_id = config.uniqueDeviceId
-	jsonObject.app_version = config.appVersion
+	if m.swrve_config = Invalid then return jsonObject
+
+	jsonObject.user = m.swrve_config.userId
+	jsonObject.unique_device_id = m.swrve_config.uniqueDeviceId
+	jsonObject.app_version = m.swrve_config.appVersion
 	jsonObject.version = SwrveConstants().SWRVE_CAMPAIGN_RESOURCES_API_VERSION
-	jsonObject.session_token = config.session_token
+	jsonObject.session_token = m.swrve_config.session_token
 	return jsonObject
 end function
 
 ' Build the batch json'
 function SwrveBuildBatchFromQueue() as Object
 	jsonObject = SwrveBuildBatchMeta()
-	if m.eventsQueue.count() < 1
+	if m.eventsQueue <> Invalid AND m.eventsQueue.count() < 1
 		m.eventsQueue = SwrveGetQueueFromStorage()
 	end if
 	jsonObject.data = m.eventsQueue
@@ -379,7 +389,7 @@ end function
 
 function SwrveBuildBatchFromQAQueue() as Object
 	jsonObject = SwrveBuildBatchMeta()
-	if m.eventsQAQueue.count() < 1
+	if m.eventsQAQueue <> Invalid AND m.eventsQAQueue.count() < 1
 		m.eventsQAQueue = SwrveGetQueueFromStorage(true)
 	end if
 	jsonObject.data = m.eventsQAQueue
@@ -419,7 +429,7 @@ function SwrvePostQueueAndFlush() as Object
 		SWLogDebug("SwrvePostQueueAndFlush - Items in batch que = ", payload.data.count())
 	end if
 
-	if payload <> Invalid AND payload.data.count() > 0
+	if payload <> Invalid AND payload.data <> Invalid AND payload.data.count() > 0
 		m.eventsSentOrQueuedRecently = true
 		if(m.swrve_config.mockHTTPPOSTResponses = true)
 			rtn = SendBatchPOST(payload, SwrveOnPostQueueAndFlush)
@@ -449,7 +459,7 @@ function SwrveOnPostQueueAndFlush(responseEvent = {} as Dynamic) as Object
 		end if
 		SwrveFlushQueue()
 
-		if(m.swrve_config.mockHTTPPOSTResponses = true)
+		if(m.swrve_config <> Invalid AND m.swrve_config.mockHTTPPOSTResponses = true)
 			return response
 		end if
 	end if
@@ -473,7 +483,7 @@ function SwrvePostQAQueueAndFlush() as Object
 		SWLogDebug("SwrvePostQAQueueAndFlush - Items in batch QA que = ", payload.data.count())
 	end if
 
-	if payload <> Invalid AND payload.data.count() > 0
+	if payload <> Invalid AND payload.data <> Invalid AND payload.data.count() > 0
 		m.eventsSentOrQueuedRecently = true
 		if(m.swrve_config.mockHTTPPOSTResponses = true)
 			rtn = SendBatchPOST(payload, SwrveOnPostQueueAndFlush)

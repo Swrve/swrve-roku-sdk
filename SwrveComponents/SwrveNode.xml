@@ -37,15 +37,14 @@
         <function name="SwrveOnClickEvent"/>
 
         <!-- APIs -->
-        <function name="SwrveOnGetCampaignsResources"/>
         <function name="SwrveOnGetResourcesDiff"/>
         <function name="SwrveFlushAndClean"/>
         <function name="SwrveOnIdentify"/>
         <function name="SwrveShutdown"/>
         <function name="GetCurrentUserIDFromConfig"/>
         <function name="ProcessUserCampaignsAndResources"/>
+        <function name="SwrveShowIAM"/>
         
-          
     </interface>
     
 	<script type="text/brightscript" uri="pkg:/components/SwrveComponents/SwrveNode.brs" />
