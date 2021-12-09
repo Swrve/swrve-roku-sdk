@@ -848,10 +848,13 @@ function SwrveDeviceInfosDictionary() as Object
     end if
     strDate += StrI(date.GetDayOfMonth()).Trim()
 
+    osVersion = device.GetOsVersion()
+    osVersion = osVersion.major + "." + osVersion.minor + "." + osVersion.revision + "." + osVersion.build
+
     attributes = {
         "swrve.device_name": "Roku" + device.GetModel().Trim(),
         "swrve.os": "roku",
-        "swrve.os_version": device.GetVersion(),
+        "swrve.os_version": osVersion,
         "swrve.device_width": box(device.GetDisplaySize().w),
         "swrve.device_height": device.GetDisplaySize().h,
         "swrve.language": device.GetCurrentLocale(),
