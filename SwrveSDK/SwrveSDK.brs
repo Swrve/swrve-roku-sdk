@@ -122,7 +122,7 @@ function SwrveSDK() as Object
 		end if
 	end function
 
-	prototype.SwrveRefreshCampaignsResources = function(callback as String) as Void
+	prototype.SwrveRefreshCampaignsResources = function(_callback as String) as Void
 		if getSwrveNode("SwrveRefreshCampaignsResources") <> Invalid
 			getSwrveNode().callFunc("ProcessUserCampaignsAndResources")
 		end if
