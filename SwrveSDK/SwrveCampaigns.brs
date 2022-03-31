@@ -57,7 +57,6 @@ function SwrveCheckAssetsInCampaignAreReady(campaign as Object) as Boolean
 	arrayOfCampaigns.push(campaign)
 	ids = SwrveBuildArrayOfAssetIDs({ campaigns: arrayOfCampaigns })
 	for each id in ids
-		localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
 		file = MatchFiles(SwrveConstants().SWRVE_ASSETS_LOCATION, id)
 		if file.count() = 0 'Asset not found'
 			return false
@@ -69,7 +68,6 @@ end function
 function SwrveCheckAssetsInMessageAreReady(message as Object) as Boolean
 	ids = SwrveBuildArrayOfAssetIDsFromMessage(message)
 	for each id in ids
-		localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
 		file = MatchFiles(SwrveConstants().SWRVE_ASSETS_LOCATION, id)
 		if file.count() = 0 'Asset not found'
 			return false
@@ -145,7 +143,7 @@ end function
 function SwrveShowIAM(message as Object)
 	if SwrveCheckAssetsInMessageAreReady(message) = false
 		SWLogWarn("Abort showing message. Assets are not ready or missing.")
-	else 
+	else
 		if getSwrveNode().sdkHasCustomRenderer = true
 			getSwrveNode().messageWillRenderCallback = message
 		else
@@ -155,7 +153,7 @@ function SwrveShowIAM(message as Object)
 end function
 
 function SwrveRenderIAM(message as Object)
-	if getSwrveNode("SwrveRenderIAM") <> Invalid 
+	if getSwrveNode("SwrveRenderIAM") <> Invalid
 		SWLogInfo("Showing IAM -", message.id)
 		getSwrveNode().currentIAM = message
 		getSwrveNode().showIAM = true
@@ -183,7 +181,7 @@ function SwrveUpdateCampaignState(campaign as Object)
 end function
 
 'Checking if we can show the message according to global display rules'
-function SwrveCanShowCampaignAccordingToGlobalRules(campaign as Object) as Boolean
+function SwrveCanShowCampaignAccordingToGlobalRules(_ as Object) as Boolean
 
 	now = CreateObject("roDateTime").AsSeconds()
 
@@ -213,7 +211,7 @@ function SwrveCanShowCampaignAccordingToGlobalRules(campaign as Object) as Boole
 		SWLogError("{Campaign throttle limit} Campaign has been shown too many times already:", m.numberOfMessagesShown, "Max:", max_messages_per_session)
 		return false
 	end if
-	
+
 	lastMessageTime = SwrveGetValueFromSection(SwrveSDK().SwrveGetCurrentUserID(), SwrveConstants().SWRVE_USER_CAMPAIGNS_LASTMESSAGETIME)
 	'Checking if delay between last message shown and now is greater than allowed delay'
 
@@ -402,13 +400,4 @@ function SwrveEventValidForCondition(event as Object, condition as Object) as Bo
 			end if
 		end if
 	end if
-end function
-
-function SwrveCampaignStateForCampaignID(id as Integer) as Object
-	location = SwrveCampaignStateFilenameForCampaign(id)
-	campaignState = SwrveGetObjectFromFile(location)
-end function
-
-function SwrveCampaignStateFilenameForCampaign(campaignID as String) as String
-	return SwrveConstants().SWRVE_CAMPAIGN_STATE_PREFIX + campaignID
 end function

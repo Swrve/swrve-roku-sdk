@@ -1,7 +1,7 @@
 ' Swrve instance creator.'
 function Swrve(config as Object) as Void
     if getSwrveNode("Swrve") = Invalid then return
-    
+
     'Development: Benchmarking
     'swrveInit = SwrveGetTimestamp()
     m.swrve_config = {
@@ -14,7 +14,7 @@ function Swrve(config as Object) as Void
         newSessionInterval: SWGetValue(config.newSessionInterval, 30)
         usersCacheDays: 30
         usersCacheSize: 5
-        
+
         'private
         userId: SWGetValue(config.userId, GetDefaultUserID())
         orientation: "landscape"
@@ -34,7 +34,7 @@ function Swrve(config as Object) as Void
 
     Migrate()
 
-    dateTimeObjects = SwrveGetTimestamp()
+    ' dateTimeObjects = SwrveGetTimestamp()
     m.installDate = CreateObject("roDateTime")
     m.joinedDate = CreateObject("roDateTime")
 
@@ -54,7 +54,7 @@ function Swrve(config as Object) as Void
     SwrveWriteValueToSection(SwrveConstants().SWRVE_SECTION_KEY, SwrveConstants().SWRVE_USER_ID_KEY, m.swrve_config.userId)
 
     'Development: Benchmarking
-    globalObjects = SwrveGetTimestamp()
+    ' globalObjects = SwrveGetTimestamp()
 
     getSwrveNode().setField("logLevel", m.swrve_config.logLevel)
     getSwrveNode().setField("isQAUser", m.swrve_config.isQAUser)
@@ -95,7 +95,7 @@ function SwrveTidyRegistry() as Void
                     SWLogDebug("Remvoing user data for", key, "no sessions since", thresholdDate.ToISOString())
                     SwrveDeleteSection(key)
                     removeUserIds.push(key)
-                    
+
                     'Delete the files stored in cachefs
 					DeleteFile(SwrveConstants().SWRVE_CAMPAIGNS_LOCATION + key + "campaigns")
 					DeleteFile(SwrveConstants().SWRVE_RESOURCES_LOCATION + key + "resources")
@@ -144,7 +144,7 @@ function SwrveStartSession()
     m.swrveNextUpdateCampaignsAndResources = CreateObject("roDateTime").AsSeconds()
 
     updateLastSessionDate()
-   
+
     'Load campaigns, resources and qa dicts from persistence as they might not come down the feed (etag)'
     m.userCampaigns = SwrveLoadUserCampaignsFromPersistence()
     getSwrveNode().userCampaigns = m.userCampaigns
@@ -329,12 +329,12 @@ function SwrveIdentify(externalID as String) as Object
     SwrveStop()
     shouldIdentify = false
     userIDs = SwrveGetValueFromSection(SwrveConstants().SWRVE_SECTION_KEY, SwrveConstants().SWRVE_USER_IDS_KEY)
-    
+
     m.dictionaryOfSwrveIDS = Invalid
     if userIDs <> ""
         m.dictionaryOfSwrveIDS = ParseJson(userIDs)
     end if
-   
+
     ' Special case : Identify used wil nil or "" '
     if externalID = ""
         SWLogWarn("SwrveIdentify() Anonymous identify")
@@ -363,7 +363,7 @@ function SwrveIdentify(externalID as String) as Object
     res = {}
     res.swrve_id = m.swrve_config.userId
     if shouldIdentify
-        response = Identify(externalID, "onIdentifyCallback")
+        Identify(externalID, "onIdentifyCallback")
         return {}
     else
         SWLogInfo("Swrve identify: Identity API call skipped, user loaded from cache")
@@ -381,7 +381,6 @@ function onIdentifyCallback(responseEvent) as Object
     end if
 
     requestObj = Invalid
-    requestStr = response.RequestStr
     externalID = ""
     if(response.requeststr <> Invalid) requestObj = ParseJSON(response.requeststr)
     if(requestObj.external_user_id <> Invalid) externalID = requestObj.external_user_id
@@ -392,7 +391,7 @@ function onIdentifyCallback(responseEvent) as Object
         udid = di.GetRandomUUID()
         SWLogInfo("Swrve identify: returned 403", response)
         SWLogInfo("Swrve retry identity with new swrve user id")
-        response = IdentifyWithUserID(udid, externalID, "onIdentifyWithUserID")
+        IdentifyWithUserID(udid, externalID, "onIdentifyWithUserID")
         return {}
     end if
 
@@ -408,7 +407,6 @@ function onIdentifyWithUserID(responseEvent)
     end if
 
     requestObj = Invalid
-    requestStr = response.RequestStr
     externalID = ""
     if(response.requeststr <> Invalid) requestObj = ParseJSON(response.requeststr)
     if(requestObj.external_user_id <> Invalid) externalID = requestObj.external_user_id
@@ -472,8 +470,6 @@ function SwrveIdentifyMocked(externalID as Object, mockedResponse as String) as 
     if shouldIdentify
         response = GetMockedUserResourcesAndCampaigns(mockedResponse)
         if response.code = 403
-            di = CreateObject("roDeviceInfo")
-            udid = di.GetRandomUUID()
             res.status = "external_user_id duplicate or bad userid"
         end if
 
@@ -580,9 +576,9 @@ function SwrveOnTimer()
         end if
     else
         'send events every 10 seconds
-        if m.eventSendingTimer MOD 10 = 0 
+        if m.eventSendingTimer MOD 10 = 0
             SwrveFlushAndClean()
-        end if 
+        end if
     end if
 end function
 
@@ -634,7 +630,7 @@ function SwrveOnUserCampaignsAndResources(response = {} as Dynamic)
 
             m.userCampaigns = userCampaigns
             getSwrveNode().userCampaigns = m.userCampaigns
-           
+
             SWLogDebug("Saving campaigns to", SwrveConstants().SWRVE_CAMPAIGNS_LOCATION + GetCurrentUserIDFromConfig() + SwrveConstants().SWRVE_USER_CAMPAIGNS_FILENAME)
             SwrveSaveStringToFile(userCampaignsStr, SwrveConstants().SWRVE_CAMPAIGNS_LOCATION + GetCurrentUserIDFromConfig() + SwrveConstants().SWRVE_USER_CAMPAIGNS_FILENAME)
             SwrveWriteValueToSection(m.swrve_config.userId, SwrveConstants().SWRVE_USER_CAMPAIGNS_SIGNATURE_FILENAME, userCampaignsSignature)
@@ -666,9 +662,9 @@ function SwrveOnUserCampaignsAndResources(response = {} as Dynamic)
         end if
 
         'TODO: m.swrve_config.campaignsAndResourcesDelay should update with value from back end. User this ? "flush_frequency": 60000
-        if  m.swrve_config <> Invalid 
+        if  m.swrve_config <> Invalid
             now = CreateObject("roDateTime").AsSeconds()
-            m.swrveNextUpdateCampaignsAndResources = now + m.swrve_config.campaignsAndResourcesDelay    
+            m.swrveNextUpdateCampaignsAndResources = now + m.swrve_config.campaignsAndResourcesDelay
         end if
 
         if getSwrveNode("SwrveOnUserCampaignsAndResources") <> Invalid AND (gotNewResourcesOrCampaigns OR getSwrveNode().resourcesAndCampaignsCallback = false)
@@ -1009,18 +1005,18 @@ function updateLastSessionDate()
 end function
 
 'Returns the api key'
-function GetAPIKey(swrveClient) as String
+function GetAPIKey(_swrveClient) as String
     return m.swrve_config.apikey
 end function
 
 'returns the install date'
-function GetInstallDate(swrveClient) as Integer
+function GetInstallDate(_swrveClient) as Integer
     date = checkOrWriteInstallDate()
     return date.AsSeconds()
 end function
 
 'returns the joined date'
-function GetJoinedDate(swrveClient) as Integer
+function GetJoinedDate(_swrveClient) as Integer
     date = checkOrWriteJoinedDate()
     return date.AsSeconds()
 end function

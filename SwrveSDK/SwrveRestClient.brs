@@ -87,7 +87,7 @@ function GetUserResourcesAndCampaigns(observer as String) as Object
 	stack = GetStack(m.swrve_config)
 	urlString = SwrveConstants().SWRVE_HTTPS + m.swrve_config.appId + "." + stack + SwrveConstants().SWRVE_CONTENT_ENDPOINT + SwrveConstants().SWRVE_USER_CONTENT_URL
 	urlString = AddSwrveUrlParametersToURL(urlString)
-	
+
 	etag = SwrveGetValueFromSection(GetCurrentUserIDFromConfig(), SwrveConstants().SWRVE_ETAG_FILENAME)
 	if etag <> ""
 		urlString += "&etag=" + etag
@@ -259,9 +259,9 @@ function DownloadAndStoreAssets(ids as Object) as Object
 		m._assetIds.Push(id)
 	end for
 
-	if m._assetIds.count() > 0 
+	if m._assetIds.count() > 0
 		for each id in ids
-			response = DownloadAndStoreImage(id)
+			DownloadAndStoreImage(id)
 		end for
 	end if
 end function
@@ -287,8 +287,6 @@ function _SwrveOnDownloadAndStoreImage(responseEvent)
 end function
 
 function DownloadAndStoreImage(id as String) as Object
-	swrveConfig = m.swrve_config
-
 	cdn = m.userCampaigns.cdn_paths.message_images
 
 	url = cdn + id

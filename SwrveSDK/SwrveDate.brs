@@ -11,7 +11,7 @@ end function
 'Create date object from string'
 function SwrveDateFromString(date as String) as Object
     dt = CreateObject("roDateTime")
-    dateStr = dt.FromISO8601String(date)
+    dt.FromISO8601String(date)
     return SwrveDate(dt)
 end function
 

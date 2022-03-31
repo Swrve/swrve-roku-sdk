@@ -175,7 +175,7 @@ function SwrveImpressionEvent(message as Object) as Object
 end function
 
 'Create a Returned event (IAM)'
-function SwrveReturnedMessageEvent(message as Object) as Object
+function SwrveReturnedMessageEvent(_message as Object) as Object
 	'TODO new campaign triggered qa log
 end function
 
@@ -344,21 +344,21 @@ end function
 
 ' Flush the queue
 function SwrveFlushQueue() as Void
-	if m.eventsQueue <> Invalid 
+	if m.eventsQueue <> Invalid
 		m.eventsQueue.clear()
 	end if
 end function
 
 ' Flush the QA queue
 function SwrveFlushQAQueue() as Void
-	if m.eventsQAQueue <> Invalid 
+	if m.eventsQAQueue <> Invalid
 		m.eventsQAQueue.clear()
 	end if
 end function
 
 ' Returns the size of the queue
 function SwrveQueueSize() as Integer
-	if m.eventsQueue <> Invalid 
+	if m.eventsQueue <> Invalid
 		return m.eventsQueue.Count()
 	end if
 	return 0
@@ -530,7 +530,7 @@ function SwrveGetSeqNum() as Integer
 	previousSeqNum = StrToI(previousSNAsString)
 	currentSeqNum = previousSeqNum + 1
 	currentSNAsString = StrI(currentSeqNum)
-  
+
 	SwrveWriteValueToSection(SwrveSDK().SwrveGetCurrentUserID(), SwrveConstants().SWRVE_SEQNUM, currentSNAsString)
 	return currentSeqNum
   end function
