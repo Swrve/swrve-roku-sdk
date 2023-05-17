@@ -34,7 +34,7 @@ function Swrve(config as Object) as Void
 
     Migrate()
 
-    dateTimeObjects = SwrveGetTimestamp()
+    'dateTimeObjects = SwrveGetTimestamp()
     m.installDate = CreateObject("roDateTime")
     m.joinedDate = CreateObject("roDateTime")
 
@@ -54,13 +54,14 @@ function Swrve(config as Object) as Void
     SwrveWriteValueToSection(SwrveConstants().SWRVE_SECTION_KEY, SwrveConstants().SWRVE_USER_ID_KEY, m.swrve_config.userId)
 
     'Development: Benchmarking
-    globalObjects = SwrveGetTimestamp()
+    'globalObjects = SwrveGetTimestamp()
 
     getSwrveNode().setField("logLevel", m.swrve_config.logLevel)
     getSwrveNode().setField("isQAUser", m.swrve_config.isQAUser)
     getSwrveNode().setField("currentIAM", {})
     getSwrveNode().setField("assetsReady", false)
     getSwrveNode().setField("sdkHasCustomRenderer", false)
+    getSwrveNode().setField("sdkHasCustomButtonFocusCallback", false)
     getSwrveNode().observeField("showIAM", "SwrveOnShowIAM")
 
     'Development: Benchmarking
@@ -363,7 +364,7 @@ function SwrveIdentify(externalID as String) as Object
     res = {}
     res.swrve_id = m.swrve_config.userId
     if shouldIdentify
-        response = Identify(externalID, "onIdentifyCallback")
+        Identify(externalID, "onIdentifyCallback")
         return {}
     else
         SWLogInfo("Swrve identify: Identity API call skipped, user loaded from cache")
@@ -381,7 +382,6 @@ function onIdentifyCallback(responseEvent) as Object
     end if
 
     requestObj = Invalid
-    requestStr = response.RequestStr
     externalID = ""
     if(response.requeststr <> Invalid) requestObj = ParseJSON(response.requeststr)
     if(requestObj.external_user_id <> Invalid) externalID = requestObj.external_user_id
@@ -392,7 +392,7 @@ function onIdentifyCallback(responseEvent) as Object
         udid = di.GetRandomUUID()
         SWLogInfo("Swrve identify: returned 403", response)
         SWLogInfo("Swrve retry identity with new swrve user id")
-        response = IdentifyWithUserID(udid, externalID, "onIdentifyWithUserID")
+        IdentifyWithUserID(udid, externalID, "onIdentifyWithUserID")
         return {}
     end if
 
@@ -408,7 +408,6 @@ function onIdentifyWithUserID(responseEvent)
     end if
 
     requestObj = Invalid
-    requestStr = response.RequestStr
     externalID = ""
     if(response.requeststr <> Invalid) requestObj = ParseJSON(response.requeststr)
     if(requestObj.external_user_id <> Invalid) externalID = requestObj.external_user_id
@@ -472,8 +471,6 @@ function SwrveIdentifyMocked(externalID as Object, mockedResponse as String) as 
     if shouldIdentify
         response = GetMockedUserResourcesAndCampaigns(mockedResponse)
         if response.code = 403
-            di = CreateObject("roDeviceInfo")
-            udid = di.GetRandomUUID()
             res.status = "external_user_id duplicate or bad userid"
         end if
 
@@ -1009,18 +1006,18 @@ function updateLastSessionDate()
 end function
 
 'Returns the api key'
-function GetAPIKey(swrveClient) as String
+function GetAPIKey() as String
     return m.swrve_config.apikey
 end function
 
 'returns the install date'
-function GetInstallDate(swrveClient) as Integer
+function GetInstallDate() as Integer
     date = checkOrWriteInstallDate()
     return date.AsSeconds()
 end function
 
 'returns the joined date'
-function GetJoinedDate(swrveClient) as Integer
+function GetJoinedDate() as Integer
     date = checkOrWriteJoinedDate()
     return date.AsSeconds()
 end function

@@ -44,7 +44,9 @@ function setInitFocus() as Void
 end function
 
 function onFocusChanged() as Void
-
+    if getSwrveNode().sdkHasCustomButtonFocusCallback = true 
+        getSwrveNode().customButtonFocusCallback = {buttons:m.buttonsNodes}
+    end if
 end function
 
 'Render an array of images'

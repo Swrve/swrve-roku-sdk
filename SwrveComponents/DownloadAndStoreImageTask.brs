@@ -19,7 +19,7 @@ function load() as Object
     req.AddHeader("Content-Type", "application/json")
     req.SetURL(request.url)
 
-    requestSuccess = req.AsyncGetToFile(request.localUrl.Trim())
+    req.AsyncGetToFile(request.localUrl.Trim())
 
     msg = Wait(30000, port)
 

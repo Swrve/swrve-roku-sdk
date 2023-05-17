@@ -19,7 +19,7 @@ function load()
     req.AddHeader("Content-Type", "application/json")
     req.SetURL(request.url)
 
-    requestSuccess = req.AsyncPostFromString(request.data)
+    req.AsyncPostFromString(request.data)
 
     msg = port.WaitMessage (30000)
 

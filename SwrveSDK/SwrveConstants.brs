@@ -2,7 +2,7 @@
 function SwrveConstants() as Object
 
     return {
-        SWRVE_SDK_VERSION: "Roku 6.0.0"
+        SWRVE_SDK_VERSION: "Roku 6.1.0"
         SWRVE_CONVERSATION_VERSION: "4"
         SWRVE_CAMPAIGN_RESOURCES_API_VERSION: "7"
 

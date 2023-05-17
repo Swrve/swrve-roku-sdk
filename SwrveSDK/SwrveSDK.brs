@@ -61,6 +61,13 @@ function SwrveSDK() as Object
 
 	' Call functions
 
+	prototype.SwrveSetCustomButtonFocusCallback = function(callback as String) as Void
+		if getSwrveNode("SwrveSetCustomButtonFocusCallback") <> Invalid AND getSwrveNode().hasField("customButtonFocusCallback") AND getSwrveNode().hasField("sdkHasCustomButtonFocusCallback")
+			getSwrveNode().observeField("customButtonFocusCallback", callback)
+			getSwrveNode().sdkHasCustomButtonFocusCallback = true
+		end if
+	end function
+
 	prototype.SwrveIdentifyExternalID = function(external_user_id as String) as Void
 		if getSwrveNode("SwrveIdentifyExternalID") <> Invalid
 			payload = { external_user_id: external_user_id }

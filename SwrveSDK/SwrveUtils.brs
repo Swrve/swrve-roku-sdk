@@ -212,6 +212,7 @@ function SwrveAddButtonToNode(node as Object, imageID as String, x as Float, y a
   rightY = screenCenterY + (y * screenRatioY - btn.height / 2)
 
   btn.translation = [rightX, rightY]
+  btn.scaleRotateCenter = [width/2.0, height/2.0]
   btn.showFocusFootprint = false
   btn.appendChild(img)
   node.appendChild(btn)

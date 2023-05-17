@@ -175,9 +175,9 @@ function SwrveImpressionEvent(message as Object) as Object
 end function
 
 'Create a Returned event (IAM)'
-function SwrveReturnedMessageEvent(message as Object) as Object
+'function SwrveReturnedMessageEvent(message as Object) as Object
 	'TODO new campaign triggered qa log
-end function
+'end function
 
 ' Generic user update event'
 function SwrveCreateUserUpdate(attributes as Object) as Object

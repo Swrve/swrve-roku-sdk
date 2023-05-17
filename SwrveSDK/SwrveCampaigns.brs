@@ -57,7 +57,6 @@ function SwrveCheckAssetsInCampaignAreReady(campaign as Object) as Boolean
 	arrayOfCampaigns.push(campaign)
 	ids = SwrveBuildArrayOfAssetIDs({ campaigns: arrayOfCampaigns })
 	for each id in ids
-		localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
 		file = MatchFiles(SwrveConstants().SWRVE_ASSETS_LOCATION, id)
 		if file.count() = 0 'Asset not found'
 			return false
@@ -69,7 +68,6 @@ end function
 function SwrveCheckAssetsInMessageAreReady(message as Object) as Boolean
 	ids = SwrveBuildArrayOfAssetIDsFromMessage(message)
 	for each id in ids
-		localUrl = SwrveConstants().SWRVE_ASSETS_LOCATION + id
 		file = MatchFiles(SwrveConstants().SWRVE_ASSETS_LOCATION, id)
 		if file.count() = 0 'Asset not found'
 			return false
@@ -113,7 +111,7 @@ function SwrveCheckEventForTriggers(event as Object)
 			for each campaign in sortedCampaigns
 				_canShowCampaign = SwrveCanShowCampaign(campaign)
 				if _canShowCampaign
-					_canShowCampaignAccordingToGlobalRules = SwrveCanShowCampaignAccordingToGlobalRules(campaign)
+					_canShowCampaignAccordingToGlobalRules = SwrveCanShowCampaignAccordingToGlobalRules()
 					if _canShowCampaignAccordingToGlobalRules
 						'Show message'
 						SwrveProcessShowIAM(campaign)
@@ -138,7 +136,7 @@ function SwrveProcessShowIAM(campaign as Object)
 
 	SwrveUpdateGlobalRules()
 	SwrveUpdateCampaignState(campaign)
-	SwrveReturnedMessageEvent(messageToShow)
+	'SwrveReturnedMessageEvent(messageToShow)
 	SwrveFlushAndClean()
 end function
 
@@ -183,7 +181,7 @@ function SwrveUpdateCampaignState(campaign as Object)
 end function
 
 'Checking if we can show the message according to global display rules'
-function SwrveCanShowCampaignAccordingToGlobalRules(campaign as Object) as Boolean
+function SwrveCanShowCampaignAccordingToGlobalRules() as Boolean
 
 	now = CreateObject("roDateTime").AsSeconds()
 
@@ -402,13 +400,4 @@ function SwrveEventValidForCondition(event as Object, condition as Object) as Bo
 			end if
 		end if
 	end if
-end function
-
-function SwrveCampaignStateForCampaignID(id as Integer) as Object
-	location = SwrveCampaignStateFilenameForCampaign(id)
-	campaignState = SwrveGetObjectFromFile(location)
-end function
-
-function SwrveCampaignStateFilenameForCampaign(campaignID as String) as String
-	return SwrveConstants().SWRVE_CAMPAIGN_STATE_PREFIX + campaignID
 end function

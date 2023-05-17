@@ -21,6 +21,8 @@
 		<field id="assetsReady" type="boolean" alwaysNotify="true" />
         <field id="isQAUser" type="boolean" alwaysNotify="true" />
  		<field id="sdkHasCustomRenderer" type="boolean" alwaysNotify="true" />
+        <field id="sdkHasCustomButtonFocusCallback" type="boolean" alwaysNotify="true" />
+        <field id="customButtonFocusCallback" type="assocarray" alwaysNotify="true" />
 		<field id="logLevel" type="integer" alwaysNotify="false" />
 		<field id="userResources" type="array" alwaysNotify="true" />
 		<field id="userCampaigns" type="assocarray" alwaysNotify="true" />

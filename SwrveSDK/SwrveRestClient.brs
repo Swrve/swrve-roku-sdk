@@ -261,7 +261,7 @@ function DownloadAndStoreAssets(ids as Object) as Object
 
 	if m._assetIds.count() > 0 
 		for each id in ids
-			response = DownloadAndStoreImage(id)
+			DownloadAndStoreImage(id)
 		end for
 	end if
 end function
@@ -287,8 +287,6 @@ function _SwrveOnDownloadAndStoreImage(responseEvent)
 end function
 
 function DownloadAndStoreImage(id as String) as Object
-	swrveConfig = m.swrve_config
-
 	cdn = m.userCampaigns.cdn_paths.message_images
 
 	url = cdn + id
